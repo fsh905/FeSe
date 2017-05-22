@@ -43,7 +43,7 @@ public class ServerAcceptHandler implements CompletionHandler<AsynchronousSocket
         // second : when read is complete,it will be trans into the readhandler
         // readhandle need a socket channel to do other things
         // 这里将result进行包装， 便于后面读取
-
+        // 后面的更改将会转向buffer分支， 对io包下面的进行实现
         result.read(byteBuffer,byteBuffer,new ReadHandler(result));
 
     }
