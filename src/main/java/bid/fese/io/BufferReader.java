@@ -7,20 +7,20 @@ package bid.fese.io;
  */
 public class BufferReader {
 
-    private BufferInStream inStream;
+    private OldBufferInStream inStream;
     private char[] charBuffer;
-    private static int defaultCharBufferSize = 8 * 1024;
+    private static int defaultCharBufferSize = 8 * 1024; // 8k
     private int nextChar, nChars;
     private boolean isEndLine = false;
 
-    public BufferReader(BufferInStream inStream, int bufferSize) {
+    public BufferReader(OldBufferInStream inStream, int bufferSize) {
         this.inStream = inStream;
         charBuffer = new char[bufferSize];
         nextChar = 0;
         nChars = 0;
     }
 
-    public BufferReader(BufferInStream inStream) {
+    public BufferReader(OldBufferInStream inStream) {
         this(inStream, defaultCharBufferSize);
     }
 

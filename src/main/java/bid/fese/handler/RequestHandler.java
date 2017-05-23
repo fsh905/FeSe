@@ -10,12 +10,12 @@ import java.nio.channels.CompletionHandler;
 
 /**
  * Created by feng_ on 2016/12/8.
- * @TODO when recv a message this will be callback
+ * 如何处理 当请求为post方法时
  */
-public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
+public class RequestHandler implements CompletionHandler<Integer,ByteBuffer>{
     private AsynchronousSocketChannel socketChannel;
-    private static final Logger log = LogManager.getLogger(ReadHandler.class);
-    public ReadHandler(AsynchronousSocketChannel socketChannel) {
+    private static final Logger log = LogManager.getLogger(RequestHandler.class);
+    public RequestHandler(AsynchronousSocketChannel socketChannel) {
         this.socketChannel = socketChannel;
     }
 
@@ -29,7 +29,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
         log.info("show the recv request:"+new String(bytes));
 
-        String method = bytes[0] == 71 ? "GET" : "POST"; //when the header has been destroy , there will
+        String method = "";
 
         switch (bytes[0]){
             case 71 : method = "GET"; break;
@@ -39,20 +39,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                         exception.printStackTrace();
         }
 
-        HeaderHandler headerHandler = new HeaderHandler(bytes,method);
+        RequestHeaderHandler headerHandler = new RequestHeaderHandler(bytes,method);
         headerHandler.parse();
 
-        // read is complete
-//        System.out.println(result);
-//        System.out.println(attachment.position());
-//        attachment.flip();
-//        System.out.println(new String(attachment.array()));
-//        attachment.clear();
-
-        //if size > 2048
-        //in the most case ,the header is small 8196,
-
         log.info("=====================================================");
+
+        // 等待客户端发送
+        socketChannel.read(attachment, attachment, this);
+
     }
 
     @Override

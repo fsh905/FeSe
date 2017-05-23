@@ -12,9 +12,9 @@ import java.util.Map;
  * Created by feng_ on 2016/12/8.
  * parse
  */
-public class HeaderHandler {
+public class RequestHeaderHandler {
 
-    private static final Logger logger = LogManager.getLogger(HeaderHandler.class);
+    private static final Logger logger = LogManager.getLogger(RequestHeaderHandler.class);
     //request method
     private String method;
     //protocol
@@ -34,7 +34,7 @@ public class HeaderHandler {
     //just complete get
     int position;
 
-    public HeaderHandler(byte[] header,String method) {
+    public RequestHeaderHandler(byte[] header, String method) {
 
         this.method = method;
         this.unparseHeaders = header;

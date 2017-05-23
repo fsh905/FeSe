@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.logging.Level;
 
 /**
  * Created by feng_ on 2016/12/8.
@@ -26,11 +25,11 @@ public class ServerAcceptHandler implements CompletionHandler<AsynchronousSocket
      * @param attachment socketServer， 服务器
      */
     @Override
-    public void completed(AsynchronousSocketChannel result, AsynchronousServerSocketChannel attachment) {
+    public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel attachment) {
         // carry on accept new client
         attachment.accept(attachment,this);
         try {
-            log.info("a new connection establish;" + result.getRemoteAddress());
+            log.info("a new connection establish;" + socketChannel.getRemoteAddress());
         } catch (IOException e) {
             log.error("get connection info error;", e);
             e.printStackTrace();
@@ -42,9 +41,10 @@ public class ServerAcceptHandler implements CompletionHandler<AsynchronousSocket
         // first buf is read into it
         // second : when read is complete,it will be trans into the readhandler
         // readhandle need a socket channel to do other things
-        // 这里将result进行包装， 便于后面读取
-        // 后面的更改将会转向buffer分支， 对io包下面的进行实现
-        result.read(byteBuffer,byteBuffer,new ReadHandler(result));
+
+        socketChannel.read(byteBuffer,byteBuffer,new RequestHandler(socketChannel));
+
+
 
     }
 

@@ -10,22 +10,24 @@ import java.util.concurrent.TimeoutException;
 /**
  * Created by feng_sh on 17-5-22.
  * 对socket的io进行封装
+ * 这种方式违背了时间请求的规则， 弃用
  */
-public class BufferInStream {
+@Deprecated
+public class OldBufferInStream {
     private AsynchronousSocketChannel socketChannel;
 
     private static final int defaultBufferSize = 1024 * 8;
     private int nextByte, nBytes;
     private ByteBuffer byteBuffer;
 
-    public BufferInStream(AsynchronousSocketChannel socketChannel, int bufferSize) {
+    public OldBufferInStream(AsynchronousSocketChannel socketChannel, int bufferSize) {
         this.socketChannel = socketChannel;
         byteBuffer = ByteBuffer.allocate(bufferSize);
         nextByte = 0;
         nBytes = 0;
     }
 
-    public BufferInStream(AsynchronousSocketChannel socketChannel) {
+    public OldBufferInStream(AsynchronousSocketChannel socketChannel) {
         this(socketChannel, defaultBufferSize);
     }
 
