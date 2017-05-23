@@ -1,7 +1,6 @@
 package bid.fese.handler;
 
-import bid.fese.Body;
-import bid.fese.Cookies;
+import bid.fese.entity.SeCookies;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,13 +21,11 @@ public class RequestHeaderHandler {
     //request url
     private String url;
     //cookies
-    private Cookies cookies;
+    private SeCookies cookies;
     //header parameter
     private Map<String,String> headerParameter;
     //request parameter
     private Map<String,String> requestParameter;
-    //request context and response content
-    private Body content;
     //now
     private byte[] unparseHeaders;
     //just complete get
@@ -139,7 +136,7 @@ public class RequestHeaderHandler {
         return url;
     }
 
-    public Cookies getCookies() {
+    public SeCookies getCookies() {
         return cookies;
     }
 
@@ -151,7 +148,4 @@ public class RequestHeaderHandler {
         return requestParameter;
     }
 
-    public Body getContent() {
-        return content;
-    }
 }

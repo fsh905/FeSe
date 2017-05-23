@@ -1,10 +1,14 @@
 package bid.fese.handler;
 
 
+import bid.fese.common.ApplicationContext;
+import bid.fese.common.Constants;
+import bid.fese.entity.SeRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -21,12 +25,12 @@ public class ServerAcceptHandler implements CompletionHandler<AsynchronousSocket
 
     /**
      *
-     * @param result socketChannel, 新的连接
+     * @param socketChannel socketChannel, 新的连接
      * @param attachment socketServer， 服务器
      */
     @Override
     public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel attachment) {
-        // carry on accept new client
+        // 继续接收其他请求
         attachment.accept(attachment,this);
         try {
             log.info("a new connection establish;" + socketChannel.getRemoteAddress());
@@ -35,17 +39,14 @@ public class ServerAcceptHandler implements CompletionHandler<AsynchronousSocket
             e.printStackTrace();
         }
 
-        //in apache & tomcat the header size is 8196
-        ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 8);
+        // in apache & tomcat the header size is 8196
+         ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 8);
         // handler the message
         // first buf is read into it
         // second : when read is complete,it will be trans into the readhandler
         // readhandle need a socket channel to do other things
 
-        socketChannel.read(byteBuffer,byteBuffer,new RequestHandler(socketChannel));
-
-
-
+        socketChannel.read(byteBuffer,byteBuffer,new ReadHandler(socketChannel));
     }
 
     @Override
