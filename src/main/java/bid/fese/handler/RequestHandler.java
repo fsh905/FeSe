@@ -40,8 +40,11 @@ public class RequestHandler implements Runnable {
                 }
                 request = requests.remove(0);
             }
-
-
+            System.out.println("----------request handler------------");
+            System.out.println(request.getHeader().getUrl());
+            System.out.println(request.getHeader().getMethod());
+            System.out.println(request.getHeader().getProtocol());
+            System.out.println("------------handler end--------------");
         }
     }
 }
