@@ -29,6 +29,9 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
         log.debug("read len:" + readBytesLen + "\nread data:" + new String(attachment.array()));
+
+
+
         attachment.flip();          //the length of position to limit
         if (readBytesLen == Constants.DEFAULT_UPLOAD_SIZE) {
             // 还有数据未读取
@@ -49,6 +52,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
                     log.debug("remain size is:" + readBytesLen);
                     attachment.flip();
+                    // 这样的效率远不如直接把头部解析出来
                     if (readBytesLen < Constants.DEFAULT_UPLOAD_SIZE) {
                         byte[] newBytes = new byte[nowIndex + readBytesLen];
                         System.arraycopy(data, 0, newBytes, 0, nowIndex);

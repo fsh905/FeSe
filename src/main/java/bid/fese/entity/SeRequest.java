@@ -16,6 +16,9 @@ import java.nio.channels.CompletionHandler;
  */
 public class SeRequest {
 
+    public enum METHOD {GET, POST}
+    public enum HEADER {CONTENT_LENGTH, COOKIES}
+
     private static final Logger log = LogManager.getLogger(SeRequest.class);
 
     private SeHeader header;
