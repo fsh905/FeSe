@@ -27,6 +27,7 @@ public class RequestHandlers {
     }
 
     public static void addRequest(SeRequest request) {
+        // 有什么用呢
         RequestHandler handler = requestMap.get(request);
         if (handler != null) {
             handler.addRequest(request);

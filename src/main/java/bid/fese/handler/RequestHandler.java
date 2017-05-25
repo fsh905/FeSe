@@ -1,6 +1,7 @@
 package bid.fese.handler;
 
 import bid.fese.entity.SeRequest;
+import bid.fese.entity.SeResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,9 +42,14 @@ public class RequestHandler implements Runnable {
                 request = requests.remove(0);
             }
             System.out.println("----------request handler------------");
-            System.out.println(request.getHeader().getUrl());
-            System.out.println(request.getHeader().getMethod());
-            System.out.println(request.getHeader().getProtocol());
+            System.out.println(request.getUrl());
+            System.out.println(request.getMethod());
+
+            SeResponse response = new SeResponse(request);
+
+            response.writeFile("/home/wkzq/Documents/" + request.getUrl());
+            response.flush();
+
             System.out.println("------------handler end--------------");
         }
     }

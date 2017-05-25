@@ -9,6 +9,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketOption;
+import java.net.SocketOptions;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -32,6 +35,7 @@ public class ServerAcceptHandler implements CompletionHandler<AsynchronousSocket
     public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel attachment) {
         // 继续接收其他请求
         attachment.accept(attachment,this);
+
         try {
             log.info("a new connection establish;" + socketChannel.getRemoteAddress());
         } catch (IOException e) {

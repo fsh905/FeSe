@@ -91,14 +91,15 @@ public class RequestHeaderHandler {
         while (bytes[headParseIndex] != ' ') {
             if (bytes[headParseIndex] == '?'){
                 //hava reque para
-                headParseIndex ++;
+//                headParseIndex ++;
                 index = parseRequestParam(bytes, header, headParseIndex);
+//                headParseIndex--;
                 break;
             }
             headParseIndex ++;
         }
         // 解析url
-        header.setUrl(new String(bytes,lastPosi,headParseIndex-lastPosi-1));
+        header.setUrl(new String(bytes,lastPosi,headParseIndex-lastPosi));
 
         logger.debug("url:"+header.getUrl());
 
@@ -162,7 +163,7 @@ public class RequestHeaderHandler {
     }
 
     public static void main(String[] args) throws UnsupportedRequestMethodException {
-        String hd = "GET /yin-jingyu/archive/2011/08/01/2123548.html HTTP/1.1\r\n" +
+        String hd = "GET /yin-jingyu/archive/2011/08/01/2123548.html?name=feng&name=shao HTTP/1.1\r\n" +
                 "Host: www.cnblogs.com\r\n" +
                 "Connection: keep-alive\r\n" +
                 "Pragma: no-cache\r\n" +

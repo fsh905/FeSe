@@ -30,9 +30,24 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
-//        log.debug("read len:" + readBytesLen + "\nread data:" + new String(attachment.array()));
-        
-        byte[] bytes = new byte[attachment.position()];
+        log.debug("read len:" + readBytesLen + "\n");
+        if (readBytesLen <= 0) {
+            log.error("the request len is 0, attempt to close;");
+            try {
+                socketChannel.shutdownInput();
+                socketChannel.shutdownOutput();
+            } catch (IOException e) {
+                log.error("close failed!", e);
+            } finally {
+                try {
+                    socketChannel.close();
+                } catch (IOException e) {
+                    log.error("close socket channel failed!", e);
+                }
+            }
+            return;
+        }
+        byte[] bytes = new byte[readBytesLen];
         attachment.flip();          //the length of position to limit
         attachment.get(bytes);
         attachment.clear();
@@ -64,7 +79,8 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
         switch (header.getMethod()) {
             case GET: {
-                log.debug("read completed\n the method is GET\n the len is:" + bytes.length + " the data is:\n" + new String(bytes));
+
+                log.debug("read completed\n the method is GET\n the len is:" + bytes.length);
                 log.debug("-------------end--------------");
                 //数据读取完毕, 进行下一阶段
                 // header不需要inputStream
@@ -89,7 +105,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                         public void completed(Integer readLen, SeHeader seHeader) {
                             log.debug("buffer remain:" + buffer.position());
                             log.debug("read large request completed\n the len is:" + contentLen);
-                            log.debug("the data is:" + new String(buffer.array()));
+//                            log.debug("the data is:" + new String(buffer.array()));
                             log.debug("-------------end--------------");
                             // todo 这里是否使用copy
                             RequestHandlers.addRequest(new SeRequest(socketChannel, seHeader, buffer.array()));

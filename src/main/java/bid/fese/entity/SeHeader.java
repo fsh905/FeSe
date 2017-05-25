@@ -12,7 +12,7 @@ public class SeHeader {
 
     public static final String OK_200 = "HTTP/1.1 200 OK";
     public static final String NEWLINE = "\r\n";
-    public static final String NOT_FOUND_404 = "HTTP/1.1 404 Not Find";
+    public static final String NOT_FOUND_404 = "HTTP/1.1 404 Not Found";
     public static final String SERVER_ERROR_500 = "HTTP/1.1 500 Internal Server Error";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String CONNECTION = "Connection";

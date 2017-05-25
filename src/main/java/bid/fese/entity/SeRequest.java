@@ -1,19 +1,14 @@
 package bid.fese.entity;
 
-import bid.fese.common.Constants;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
+import java.util.Set;
 
 /**
  * Created by feng_sh on 5/23/2017.
  * 请求
+ * 不支持同名多参数请求：例如： ?name=feng&name=ming 不支持
  */
 public class SeRequest {
 
@@ -25,7 +20,7 @@ public class SeRequest {
         PATCH, POST, PUT,
         TRACE}
 
-    private static final Logger log = LogManager.getLogger(SeRequest.class);
+//    private static final Logger log = LogManager.getLogger(SeRequest.class);
 
     private SeHeader header;
     private SeCookies cookies;
@@ -45,6 +40,32 @@ public class SeRequest {
         this.header = header;
         this.cookies = header.getCookies();
     }
+
+    public String getUrl() {
+        return header.getUrl();
+    }
+
+    public String getParameter(String name) {
+        return header.getRequestParameter(name);
+    }
+
+    public Set<String> getParameterNames() {
+        return header.getRequestParameters().keySet();
+    }
+
+    public METHOD getMethod() {
+        return header.getMethod();
+    }
+
+    /**
+     * 可以先获取header再调用
+     * @param name 参数名
+     * @return 值 或者 null
+     */
+    public String getHeaderParameter(String name) {
+        return header.getHeaderParameter(name);
+    }
+
 
     AsynchronousSocketChannel getSocketChannel() {
         return socketChannel;
