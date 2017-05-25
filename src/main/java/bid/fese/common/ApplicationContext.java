@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ApplicationContext {
 
     private static ApplicationContext applicationContext ;
-    private final Map<String, Object> context = new ConcurrentHashMap<>();
+    private static final Map<String, Object> context = new ConcurrentHashMap<>();
 
     private ApplicationContext() {}
 
@@ -21,11 +21,20 @@ public class ApplicationContext {
         return applicationContext;
     }
 
-    public Object get(String serviceName) {
+    public static String getClassPath() {
+        String path = (String) get(Constants.CLASS_PATH);
+        if (path == null) {
+            path = ApplicationContext.class.getResource("/").getPath().replace("/bin", "classes");
+            put(Constants.CLASS_PATH, path);
+        }
+        return path;
+    }
+
+    public static Object get(String serviceName) {
         return context.get(serviceName);
     }
 
-    public void put(String serviceName, Object service) {
+    public static void put(String serviceName, Object service) {
         context.put(serviceName, service);
     }
 

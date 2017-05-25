@@ -2,6 +2,7 @@ package bid.fese.entity;
 
 import bid.fese.common.Constants;
 import bid.fese.handler.WriterHandler;
+import com.sun.org.apache.xml.internal.serializer.SerializationHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,6 +35,13 @@ public class SeResponse {
         this.header.addHeaderParameter(SeHeader.SERVER, "FeSe");
     }
 
+    public SeCookies getCookies() {
+        return cookies;
+    }
+
+    public SeHeader getHeader() {
+        return header;
+    }
 
 
     public void writeFile(String filePath) {
@@ -92,6 +100,7 @@ public class SeResponse {
         if (outStream == null) {
             // 再次判断contents是否有, 因此 首先推荐使用outStream
             if (contents == null) {
+                header.setContentLength(0);
                 byte[] headerBytes = header.toString().getBytes();
                 byteBuffer = ByteBuffer.allocate(headerBytes.length);
                 byteBuffer.put(headerBytes);

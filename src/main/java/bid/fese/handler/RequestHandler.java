@@ -47,8 +47,7 @@ public class RequestHandler implements Runnable {
 
             SeResponse response = new SeResponse(request);
 
-            response.writeFile("/home/wkzq/Documents/" + request.getUrl());
-            response.flush();
+            RequestHandlers.getRequestDispatcherHandler().handlerRequest(request, response);
 
             System.out.println("------------handler end--------------");
         }

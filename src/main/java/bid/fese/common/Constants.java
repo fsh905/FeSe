@@ -18,4 +18,17 @@ public class Constants {
     public static final byte[] HEADER_END = {13, 10, 13, 10};
     // 长度
     public static final String CONTENT_LENGTH = "Content-Length";
+    // classpath
+    public static final String CLASS_PATH = "CLASS_PATH";
+
+    // 配置文件路径
+    public static final String CONFIGURE_PATH = "server.properties";
+
+    public static final String CONFIG_SERVER_PORT = "server_port";
+    public static final String CONFIG_CONTROLLER_PATH = "controller_path";
+    public static final String CONFIG_STATIC_RESOURCE_PATH = "static_resource_path";
+    public static final String CONFIG_REQUEST_POSTFIX = "request_postfix";
+    public static final String CONFIG_REQUEST_HANDLER = "request_handler";
+    public static final String CONFIG_INDEX = "index";
+
 }
