@@ -1,6 +1,8 @@
 package bid.fese.handler;
 
 import bid.fese.entity.SeRequest;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -10,8 +12,11 @@ import java.util.*;
  */
 public class RequestHandlers {
 
+
+    private static final Logger logger = LogManager.getLogger(RequestHandlers.class);
+    // 这里可以采用优先队列
     private static final List<RequestHandler> handlers = new ArrayList<>(4);
-//    private static Map<SeRequest, RequestHandler> requestMap = new WeakHashMap<>();
+    //    private static Map<SeRequest, RequestHandler> requestMap = new WeakHashMap<>();
     // 静态文件处理
     private static ThreadLocal<StaticDispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 动态请求处理
@@ -28,9 +33,15 @@ public class RequestHandlers {
 
     private RequestHandlers() {}
 
+    /**
+     * 这里的随机方式有问题， 可以采用负载均衡，根据当前handler的连接数来判断选取哪一个
+     * @return handler
+     */
     public static RequestHandler getHandler() {
         int i = (int) (Math.random() * 10) % handlers.size();
-        return handlers.get(i);
+        RequestHandler handler = handlers.get(i);
+        logger.debug("this request is assign to handler:");
+        return handler;
     }
 
     /**
@@ -84,16 +95,8 @@ public class RequestHandlers {
      * @param request 请求
      */
     public static void addRequest(SeRequest request) {
-        // 有什么用呢
-//        RequestHandler handler = requestMap.get(request);
-//        if (handler != null) {
-//            handler.addRequest(request);
-//        } else {
-        // 随机分配
-
         int i = (int) (Math.random() * 10) % handlers.size();
         handlers.get(i).addRequest(request);
-//        }
     }
 
     public static void addRequestCount() {

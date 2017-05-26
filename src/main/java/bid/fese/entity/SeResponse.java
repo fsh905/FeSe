@@ -57,6 +57,7 @@ public class SeResponse {
             // 文件存在
             FileInputStream fis = null;
             try {
+
                 fis = new FileInputStream(file);
                 long len = file.length();
                 contents = new byte[(int) len];
@@ -96,6 +97,7 @@ public class SeResponse {
      * 主要功能是发送, 必须执行flush才能发送
      */
     public void flush() {
+        logger.debug("flush start time:" + System.currentTimeMillis());
         ByteBuffer byteBuffer = null;
         if (outStream == null) {
             // 再次判断contents是否有, 因此 首先推荐使用outStream
@@ -124,17 +126,25 @@ public class SeResponse {
             byteBuffer.flip();
         }
 
-        logger.debug("response header:\n" + header.toString());
+//        logger.debug("response header:\n" + header.toString());
+        logger.debug("flush end time:" + System.currentTimeMillis());
         socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override
             public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
                 logger.debug("write success!");
                 logger.debug("attempt to close");
+                logger.debug("connection close time:" + System.currentTimeMillis());
                 try {
                     socketChannel.shutdownOutput();
                     logger.debug("close success");
                 } catch (IOException e) {
                     logger.error("close socketChannel", e);
+                } finally {
+                    try {
+                        socketChannel.close();
+                    } catch (IOException e) {
+                        logger.error("close socket error", e);
+                    }
                 }
             }
 

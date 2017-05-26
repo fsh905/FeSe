@@ -25,7 +25,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     }
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
-        log.debug("read len:" + readBytesLen + "\n");
+        log.debug("read len:" + readBytesLen);
         if (readBytesLen <= 0) {
             log.error("the request len is 0, attempt to close;");
             try {
@@ -42,11 +42,13 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             }
             return;
         }
+        log.debug("get bytes start:" + System.currentTimeMillis());
+
         byte[] bytes = new byte[readBytesLen];
         attachment.flip();          //the length of position to limit
         attachment.get(bytes);
         attachment.clear();
-
+        log.debug("get bytes end:" + System.currentTimeMillis());
         // 测试
         long t = System.currentTimeMillis();
         log.debug("start parse Header:" + t);
@@ -82,11 +84,19 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
         switch (header.getMethod()) {
             case GET: {
 
-                log.debug("read completed\n the method is GET\n the len is:" + bytes.length);
-                log.debug("-------------end--------------");
+//                log.debug("read completed\t the method is GET\t the len is:" + bytes.length);
+//                log.debug("-------------end-------------");
                 //数据读取完毕, 进行下一阶段
                 // request不需要inputStream
+                log.debug("start add request:" + System.currentTimeMillis());
                 RequestHandlers.addRequest(new SeRequest(socketChannel, header));
+
+                log.debug("close input:" + System.currentTimeMillis());
+                try {
+                    socketChannel.shutdownInput();
+                } catch (IOException e) {
+                    log.error("close input error", e);
+                }
             } break;
             case POST: {
                 int contentLen = Integer.parseInt(header.getHeaderParameter(Constants.CONTENT_LENGTH));
@@ -94,7 +104,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     // 长度合适
                     byte[] data = new byte[contentLen];
                     System.arraycopy(bytes, headerLenEnd + 4, data, 0, contentLen);
-                    log.debug("post recv data:" + new String(data));
+//                    log.debug("post recv data:" + new String(data));
                     //数据读取完毕, 进行下一阶段
                     // post请求, request 实现inputStream需要byte
                     RequestHandlers.addRequest(new SeRequest(socketChannel, header, data));
@@ -105,11 +115,18 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     socketChannel.read(buffer, header, new CompletionHandler<Integer, SeHeader>() {
                         @Override
                         public void completed(Integer readLen, SeHeader seHeader) {
-                            log.debug("buffer remain:" + buffer.position());
-                            log.debug("read large request completed\n the len is:" + contentLen);
-                            log.debug("-------------end--------------");
+//                            log.debug("buffer remain:" + buffer.position());
+//                            log.debug("read large request completed\n the len is:" + contentLen);
+//                            log.debug("-------------end--------------");
                             // todo 这里是否使用copy
                             RequestHandlers.addRequest(new SeRequest(socketChannel, seHeader, buffer.array()));
+
+                            log.debug("close input");
+                            try {
+                                socketChannel.shutdownInput();
+                            } catch (IOException e) {
+                                log.error("close input error", e);
+                            }
                         }
 
                         @Override
@@ -164,7 +181,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 index = headParseIndex += 2;
                 header.addHeaderParameter(key,value);
 
-                log.info("key:"+key+"-\tvalue:"+value);
+//                log.info("key:"+key+"-\tvalue:"+value);
             }
         }
 
@@ -227,7 +244,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             while (bytes[headParseIndex] != '\r') headParseIndex ++;
 
             header.setProtocol(new String(bytes,lastPosi,headParseIndex-lastPosi));
-            log.debug("protocol:"+header.getProtocol());
+//            log.debug("protocol:"+header.getProtocol());
             return headParseIndex + 2;
 
         }
@@ -253,7 +270,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 value = new String(bytes,old,index-old);
 
                 header.addRequestParameter(key,value);
-                log.debug("k:"+key+" \tv:"+value);
+//                log.debug("k:"+key+" \tv:"+value);
             }
             return index + 1;
         }
