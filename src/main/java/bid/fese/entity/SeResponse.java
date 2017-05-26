@@ -1,14 +1,14 @@
 package bid.fese.entity;
 
 import bid.fese.common.Constants;
-import bid.fese.handler.WriterHandler;
-import com.sun.org.apache.xml.internal.serializer.SerializationHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by feng_sh on 5/24/2017.
@@ -125,7 +125,24 @@ public class SeResponse {
         }
 
         logger.debug("response header:\n" + header.toString());
-        socketChannel.write(byteBuffer, socketChannel, new WriterHandler());
+        socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
+                logger.debug("write success!");
+                logger.debug("attempt to close");
+                try {
+                    socketChannel.shutdownOutput();
+                    logger.debug("close success");
+                } catch (IOException e) {
+                    logger.error("close socketChannel", e);
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+                logger.error("write error", attachment, exc);
+            }
+        });
 
     }
 
@@ -164,6 +181,27 @@ public class SeResponse {
         public void flush() throws IOException {
             SeResponse.this.flush();
         }
+    }
+
+    /**
+     * 进行gzip压缩
+     * @param file file
+     */
+    public static void GZIPFile(File file, SeResponse response) throws IOException {
+
+        BufferedInputStream bis = new BufferedInputStream(
+                new GZIPInputStream(
+                        new FileInputStream(file)));
+        BufferedOutputStream bos = new BufferedOutputStream(response.getOutStream());
+
+        byte[] bytes = new byte[1024];
+        int l = 0;
+        while ((l = bis.read(bytes)) != -1) {
+            bos.write(bytes, 0, l);
+        }
+        bos.flush();
+        bos.close();
+        bis.close();
     }
 
 }

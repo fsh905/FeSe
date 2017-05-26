@@ -5,6 +5,7 @@ import bid.fese.entity.SeResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -13,14 +14,17 @@ import java.util.List;
  */
 public class RequestHandler implements Runnable {
 
-    // 请求队列
-    private static List<SeRequest> requests = Collections.synchronizedList(new ArrayList<>());
+    // 每个线程一个请求队列
+    // 插入删除较多， 采用linkedList
+    private List<SeRequest> requests = new LinkedList<>();
 
     public void addRequest(SeRequest request) {
         synchronized (requests) {
             requests.add(request);
-            requests.notify();
+            requests.notifyAll();
         }
+        // 请求数计算， 用于负载均衡
+        RequestHandlers.addRequestCount();
     }
 
 
@@ -41,15 +45,10 @@ public class RequestHandler implements Runnable {
                 }
                 request = requests.remove(0);
             }
-            System.out.println("----------request handler------------");
-            System.out.println(request.getUrl());
-            System.out.println(request.getMethod());
-
+            RequestHandlers.minusRequestCount();
             SeResponse response = new SeResponse(request);
-
+            // 这里使用的是ThreadLocal， 针对不同的线程分配单独的handler
             RequestHandlers.getRequestDispatcherHandler().handlerRequest(request, response);
-
-            System.out.println("------------handler end--------------");
         }
     }
 }

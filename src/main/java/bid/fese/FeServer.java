@@ -1,13 +1,16 @@
 package bid.fese;
 
-import bid.fese.handler.ServerAcceptHandler;
+import bid.fese.common.Constants;
+import bid.fese.handler.ReadHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
-import java.util.logging.Level;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 
 /**
  * Created by feng_ on 2016/12/8.
@@ -29,9 +32,31 @@ public class FeServer implements Runnable{
             serverSocketChannel.bind(new InetSocketAddress("0.0.0.0",port));
             logger.info("Server start in " + port);
             //链接过来， 生成一个handler
-            serverSocketChannel.accept(serverSocketChannel,new ServerAcceptHandler());
+            serverSocketChannel.accept(serverSocketChannel, new CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel>() {
+                @Override
+                public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel attachment) {
+                    // 继续接收其他请求
+                    serverSocketChannel.accept(attachment,this);
+
+                    try {
+                        logger.info("a new connection establish;" + socketChannel.getRemoteAddress());
+                    } catch (IOException e) {
+                        logger.error("get connection info error;", e);
+                        e.printStackTrace();
+                    }
+                    // 默认
+                    ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.DEFAULT_UPLOAD_SIZE);
+                    socketChannel.read(byteBuffer,byteBuffer,new ReadHandler(socketChannel));
+                }
+
+                @Override
+                public void failed(Throwable exc, AsynchronousServerSocketChannel attachment) {
+                    logger.error("accept error;", exc);
+                }
+            });
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("connect error;", e);
+
         }
     }
 }

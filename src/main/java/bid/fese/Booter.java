@@ -37,7 +37,7 @@ public class Booter {
         new Thread(server, "server").start();
     }
 
-    public void config() {
+    private void config() {
         String classPath = ApplicationContext.getClassPath();
         Map<String, String> props = null;
         try {
