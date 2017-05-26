@@ -12,11 +12,9 @@ import java.util.*;
  */
 public class RequestHandlers {
 
-
     private static final Logger logger = LogManager.getLogger(RequestHandlers.class);
     // 这里可以采用优先队列
     private static final List<RequestHandler> handlers = new ArrayList<>(4);
-    //    private static Map<SeRequest, RequestHandler> requestMap = new WeakHashMap<>();
     // 静态文件处理
     private static ThreadLocal<StaticDispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 动态请求处理

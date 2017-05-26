@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
@@ -126,27 +127,27 @@ public class SeResponse {
             byteBuffer.flip();
         }
 
-//        logger.debug("response header:\n" + header.toString());
+        logger.debug("response header:\n" + header.toString());
         logger.debug("flush end time:" + System.currentTimeMillis());
         socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override
             public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-                logger.debug("write success!");
-                logger.debug("attempt to close");
-                logger.debug("connection close time:" + System.currentTimeMillis());
+
                 try {
-                    socketChannel.shutdownOutput();
-                    logger.debug("close success");
-                } catch (IOException e) {
-                    logger.error("close socketChannel", e);
-                } finally {
-                    try {
+                    // 如果设置keepAlive
+                    if (socketChannel.isOpen() && !socketChannel.getOption(StandardSocketOptions.SO_KEEPALIVE)) {
+                        logger.debug("write success!");
+                        logger.debug("connection close time:" + System.currentTimeMillis());
+                        logger.debug("close socket" + socketChannel.getRemoteAddress());
                         socketChannel.close();
-                    } catch (IOException e) {
-                        logger.error("close socket error", e);
+                    } else {
+                        logger.debug("keep-alive not close");
                     }
+                } catch (IOException e) {
+                    logger.error("close error");
                 }
             }
+
 
             @Override
             public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
@@ -181,15 +182,6 @@ public class SeResponse {
                 bytes = newBytes;
             }
             bytes[nextBytes++] = (byte) b;
-        }
-
-        /**
-         * 调用外部类的flush
-         * @throws IOException
-         */
-        @Override
-        public void flush() throws IOException {
-            SeResponse.this.flush();
         }
     }
 

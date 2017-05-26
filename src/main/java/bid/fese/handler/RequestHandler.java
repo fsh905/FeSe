@@ -53,6 +53,7 @@ public class RequestHandler implements Runnable {
             }
             RequestHandlers.minusRequestCount();
             SeResponse response = new SeResponse(request);
+            logger.debug("start dispatcher request:" + System.currentTimeMillis());
             // 这里使用的是ThreadLocal， 针对不同的线程分配单独的handler
             RequestHandlers.getRequestDispatcherHandler().handlerRequest(request, response);
         }
