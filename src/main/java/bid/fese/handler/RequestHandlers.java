@@ -37,8 +37,8 @@ public class RequestHandlers {
      */
     public static RequestHandler getHandler() {
         int i = (int) (Math.random() * 10) % handlers.size();
+        logger.info("dispatcher to handler-" + i);
         RequestHandler handler = handlers.get(i);
-        logger.debug("this request is assign to handler:");
         return handler;
     }
 
@@ -94,8 +94,7 @@ public class RequestHandlers {
      * @param request 请求
      */
     public static void addRequest(SeRequest request) {
-        int i = (int) (Math.random() * 10) % handlers.size();
-        handlers.get(i).addRequest(request);
+        getHandler().addRequest(request);
     }
 
     public static void addRequestCount() {

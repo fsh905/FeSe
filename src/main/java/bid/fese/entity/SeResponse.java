@@ -204,11 +204,15 @@ public class SeResponse {
         }
 
         logger.debug("response header:\n" + header.toString());
-        logger.debug("flush end time:" + System.currentTimeMillis());
+        logger.info("start send response:" + System.currentTimeMillis());
         socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override
             public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-                logger.debug("write success! and keep-alive is:" + isKeepAlive);
+                try {
+                    logger.info("write success! and address is:" + socketChannel.getRemoteAddress());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 try {
                     // 如果设置keepAlive
                     if (socketChannel.isOpen() && !SeResponse.this.isKeepAlive) {

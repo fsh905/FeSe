@@ -28,6 +28,7 @@ public class SeRequest {
     private InputStream inputStream;
     private AsynchronousSocketChannel socketChannel;
     private boolean isKeepAlive;
+    private String remoteAddress;
 
     public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, byte[] in, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
@@ -35,6 +36,11 @@ public class SeRequest {
         this.header = header;
         this.cookies = header.getCookies();
         this.isKeepAlive = isKeepAlive;
+        try {
+            this.remoteAddress = socketChannel.getRemoteAddress().toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
@@ -42,6 +48,15 @@ public class SeRequest {
         this.header = header;
         this.cookies = header.getCookies();
         this.isKeepAlive = isKeepAlive;
+        try {
+            this.remoteAddress = socketChannel.getRemoteAddress().toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getRemoteAddress() {
+        return remoteAddress;
     }
 
     public boolean isKeepAlive() {
