@@ -90,11 +90,13 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     // 长度合适
                     byte[] data = new byte[contentLen];
                     System.arraycopy(bytes, headerLenEnd + 4, data, 0, contentLen);
+                    log.debug("read short post, data is:\n" + new String(data));
                     //数据读取完毕, 进行下一阶段
                     // post请求, request 实现inputStream需要byte
                     RequestHandlers.addRequest(new SeRequest(socketChannel, header, data, isKeepAlive));
                 } else {
                     // 长度太长, 进行第二次读取
+                    log.debug("read long post, len is:" + contentLen);
                     ByteBuffer buffer = ByteBuffer.allocate(contentLen);
                     buffer.put(bytes, headerLenEnd + 4, bytes.length - headerLenEnd - 4);
                     socketChannel.read(buffer, header, new CompletionHandler<Integer, SeHeader>() {
@@ -103,6 +105,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                             // 这里使用copy出来的数组
                             byte[] in = new byte[contentLen];
                             buffer.get(in, 0, contentLen);
+                            log.debug("read long post success; data is:\n" + new String(in));
                             RequestHandlers.addRequest(new SeRequest(socketChannel, seHeader, in, isKeepAlive));
                         }
 
@@ -211,8 +214,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     }
                     break;
                 case 84 : header.setMethod(SeRequest.METHOD.TRACE); headParseIndex += 6; break;
-                default:
-                    throw new UnsupportedRequestMethodException(new String(bytes));
+                default: throw new UnsupportedRequestMethodException("");
             }
 
             log.debug("method:" + header.getMethod());

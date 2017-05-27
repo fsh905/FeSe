@@ -5,11 +5,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by feng_sh on 5/24/2017.
@@ -25,22 +27,31 @@ public class SeResponse {
     private OutStream outStream;
     private byte[] contents;
     private boolean isKeepAlive;
+    private boolean isSupportGZIP;
 
     public SeResponse(SeRequest request) {
         this.socketChannel = request.getSocketChannel();
         SeHeader header = request.getHeader();
         this.cookies = header.getCookies();
+
+        // 判断是否支持gzip
+        if (header.getHeaderParameter(SeHeader.ACCEPT_ENCODING) != null) {
+            isSupportGZIP = header.getHeaderParameter(SeHeader.ACCEPT_ENCODING).contains("gzip");
+        }
+
         // 清除header中的请求参数等
         header.clear();
         this.header = header;
         this.header.setStatus(SeHeader.OK_200);
         this.header.addHeaderParameter(SeHeader.SERVER, "FeSe");
         if (request.isKeepAlive()) {
-            this.header.addHeaderParameter(SeHeader.KEEP_ALIVE, String.valueOf(Constants.DEFAULT_KEEP_ALIVE_TIME));
+            this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.KEEP_ALIVE);
             isKeepAlive = true;
         } else {
             isKeepAlive = false;
         }
+
+
 
     }
 
@@ -65,12 +76,30 @@ public class SeResponse {
         } else {
             // 文件存在
             FileInputStream fis = null;
+            GZIPOutputStream goz = null;
             try {
-
                 fis = new FileInputStream(file);
-                long len = file.length();
-                contents = new byte[(int) len];
-                fis.read(contents);
+                // 这里采用gzip
+                if (isSupportGZIP) {
+                    header.addHeaderParameter(SeHeader.CONTENT_ENCODING, SeHeader.GZIP);
+                    logger.debug("use gzip");
+                    goz = new GZIPOutputStream(getOutStream());
+                    int l = 0;
+                    byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
+                    while ((l = fis.read(bytes)) != -1) {
+                        goz.write(bytes, 0, l);
+                    }
+                    goz.flush();
+                } else {
+                    logger.debug("not use gzip");
+                    long len = file.length();
+                    contents = new byte[(int) len];
+                    fis.read(contents);
+                }
+                String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
+                if (fileType != null) {
+                    header.addHeaderParameter(SeHeader.CONTENT_TYPE, fileType);
+                }
             } catch (FileNotFoundException e) {
                 logger.error("file not found; path:" + file.getAbsolutePath(), e);
                 _404_notFound();
@@ -86,6 +115,14 @@ public class SeResponse {
                         _500_Server_Error();
                     }
                 }
+                if (goz != null) {
+                    try {
+                        goz.close();
+                    } catch (IOException e) {
+                        logger.error("close giz error: path:" + file.getAbsolutePath(), e);
+                        _500_Server_Error();
+                    }
+                }
             }
         }
     }
@@ -93,12 +130,14 @@ public class SeResponse {
     private void _404_notFound() {
         this.header.setStatus(SeHeader.NOT_FOUND_404);
         this.header.setContentLength(0);
+        this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.CONNECTION_CLOSE);
         flush();
     }
 
     private void _500_Server_Error() {
         this.header.setStatus(SeHeader.SERVER_ERROR_500);
         this.header.setContentLength(0);
+        this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.CONNECTION_CLOSE);
         flush();
     }
 
@@ -196,7 +235,7 @@ public class SeResponse {
      * 进行gzip压缩
      * @param file file
      */
-    public static void GZIPFile(File file, SeResponse response) throws IOException {
+    public void GZIPFile(File file, SeResponse response) throws IOException {
 
         BufferedInputStream bis = new BufferedInputStream(
                 new GZIPInputStream(

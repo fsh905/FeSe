@@ -16,6 +16,7 @@ public class SeHeader {
     public static final String SERVER_ERROR_500 = "HTTP/1.1 500 Internal Server Error";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String CONNECTION = "Connection";
+    public static final String CONNECTION_CLOSE = "close";
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String KEEP_ALIVE = "keep-alive";
     public static final String CONTENT_ENCODING = "Content-Encoding";
