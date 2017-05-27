@@ -136,7 +136,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     socketChannel.read(attachment, Constants.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, attachment, this);
                 }
             } catch (IOException e) {
-                log.error("set keep alive error;", e);
+                log.error("set keep alive error; close", e);
+                if (socketChannel.isOpen()) {
+                    try {
+                        socketChannel.close();
+                    } catch (IOException e1) {
+                        log.error("close socketChannel error");
+                    }
+                }
             }
 
         }

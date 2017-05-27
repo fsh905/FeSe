@@ -13,6 +13,7 @@ public class StaticDispatcherHandler implements DispatcherHandler {
     @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
         String url = request.getUrl();
+        System.out.println("start handler:" + url);
         if (url.length() == 0 || url.length() == 1) {
             response.writeFile(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH) + "/" + ApplicationContext.get(Constants.CONFIG_INDEX));
             response.flush();

@@ -1,5 +1,6 @@
 package bid.fese.entity;
 
+import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,10 +70,17 @@ public class SeResponse {
     }
 
     public void writeFile(File file) {
+        writeFile(file, true);
+    }
+
+    private void writeFile(File file, boolean isShowPage) {
         logger.debug("write file:" + file.getAbsolutePath());
         if (!file.exists()) {
             logger.error("not found:" + file.getAbsolutePath());
-            _404_notFound();
+            if (isShowPage)
+                _404_notFoundPage();
+            else
+                _404_notFound();
         } else {
             // 文件存在
             FileInputStream fis = null;
@@ -102,17 +110,26 @@ public class SeResponse {
                 }
             } catch (FileNotFoundException e) {
                 logger.error("file not found; path:" + file.getAbsolutePath(), e);
-                _404_notFound();
+                if (isShowPage)
+                    _404_notFoundPage();
+                else
+                    _404_notFound();
             } catch (IOException e) {
                 logger.error("read error; path:" + file.getAbsolutePath(), e);
-                _500_Server_Error();
+                if (isShowPage)
+                    _500_Server_Error_Page();
+                else
+                    _500_Server_Error();
             } finally {
                 if (fis != null) {
                     try {
                         fis.close();
                     } catch (IOException e) {
                         logger.error("close fis error; path:" + file.getAbsolutePath(), e);
-                        _500_Server_Error();
+                        if (isShowPage)
+                            _500_Server_Error_Page();
+                        else
+                            _500_Server_Error();
                     }
                 }
                 if (goz != null) {
@@ -120,25 +137,37 @@ public class SeResponse {
                         goz.close();
                     } catch (IOException e) {
                         logger.error("close giz error: path:" + file.getAbsolutePath(), e);
-                        _500_Server_Error();
+                        if (isShowPage)
+                            _500_Server_Error_Page();
+                        else
+                            _500_Server_Error();
                     }
                 }
             }
         }
     }
 
+    private void _404_notFoundPage() {
+        writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
+                + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
+    }
+
+    private void _500_Server_Error_Page() {
+        writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
+                + ApplicationContext.get(Constants.CONFIG_PAGE_500).toString()), false);
+    }
+
+
     private void _404_notFound() {
         this.header.setStatus(SeHeader.NOT_FOUND_404);
         this.header.setContentLength(0);
         this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.CONNECTION_CLOSE);
-        flush();
     }
 
     private void _500_Server_Error() {
         this.header.setStatus(SeHeader.SERVER_ERROR_500);
         this.header.setContentLength(0);
         this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.CONNECTION_CLOSE);
-        flush();
     }
 
     /**

@@ -52,6 +52,7 @@ public class RequestHandlers {
             handler = new StaticDispatcherHandler();
             staticDispatcherHandlerThreadLocal.set(handler);
         }
+        logger.debug("get static dispatcher");
         return handler;
     }
 

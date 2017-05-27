@@ -69,6 +69,12 @@ public class Booter {
                     case Constants.CONFIG_REQUEST_HANDLER :
                         ApplicationContext.put(Constants.CONFIG_REQUEST_HANDLER, props.get(k));
                         break;
+                    case Constants.CONFIG_PAGE_404 :
+                        ApplicationContext.put(Constants.CONFIG_PAGE_404, props.get(k));
+                        break;
+                    case Constants.CONFIG_PAGE_500:
+                        ApplicationContext.put(Constants.CONFIG_PAGE_500, props.get(k));
+                        break;
                     default:
                         logger.error("error config properties key:" + k);
                 }
