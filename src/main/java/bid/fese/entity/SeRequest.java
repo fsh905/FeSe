@@ -27,18 +27,25 @@ public class SeRequest {
     private byte[] in;
     private InputStream inputStream;
     private AsynchronousSocketChannel socketChannel;
+    private boolean isKeepAlive;
 
-    public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, byte[] in) {
+    public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, byte[] in, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
         this.in = in;
         this.header = header;
         this.cookies = header.getCookies();
+        this.isKeepAlive = isKeepAlive;
     }
-    public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header) {
+    public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
         this.in = null;
         this.header = header;
         this.cookies = header.getCookies();
+        this.isKeepAlive = isKeepAlive;
+    }
+
+    public boolean isKeepAlive() {
+        return isKeepAlive;
     }
 
     public String getUrl() {

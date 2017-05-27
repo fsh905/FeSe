@@ -24,6 +24,7 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private byte[] contents;
+    private boolean isKeepAlive;
 
     public SeResponse(SeRequest request) {
         this.socketChannel = request.getSocketChannel();
@@ -34,6 +35,13 @@ public class SeResponse {
         this.header = header;
         this.header.setStatus(SeHeader.OK_200);
         this.header.addHeaderParameter(SeHeader.SERVER, "FeSe");
+        if (request.isKeepAlive()) {
+            this.header.addHeaderParameter(SeHeader.KEEP_ALIVE, String.valueOf(Constants.DEFAULT_KEEP_ALIVE_TIME));
+            isKeepAlive = true;
+        } else {
+            isKeepAlive = false;
+        }
+
     }
 
     public SeCookies getCookies() {
@@ -132,11 +140,10 @@ public class SeResponse {
         socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override
             public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-
+                logger.debug("write success! and keep-alive is:" + isKeepAlive);
                 try {
                     // 如果设置keepAlive
-                    if (socketChannel.isOpen() && !socketChannel.getOption(StandardSocketOptions.SO_KEEPALIVE)) {
-                        logger.debug("write success!");
+                    if (socketChannel.isOpen() && !SeResponse.this.isKeepAlive) {
                         logger.debug("connection close time:" + System.currentTimeMillis());
                         logger.debug("close socket" + socketChannel.getRemoteAddress());
                         socketChannel.close();

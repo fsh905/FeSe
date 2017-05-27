@@ -18,6 +18,8 @@ public class Constants {
     public static final byte[] HEADER_END = {13, 10, 13, 10};
     // 长度
     public static final String CONTENT_LENGTH = "Content-Length";
+
+    public static final long DEFAULT_KEEP_ALIVE_TIME = 300L;
     // classpath
     public static final String CLASS_PATH = "CLASS_PATH";
 

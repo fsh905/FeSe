@@ -74,13 +74,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
         }
 
         log.debug("end parse Header; use time:" + (System.currentTimeMillis() - t));
+        boolean isKeepAlive = header.getHeaderParameter(SeHeader.CONNECTION) != null;
 
         switch (header.getMethod()) {
             case GET: {
                 //数据读取完毕, 进行下一阶段
                 // request不需要inputStream
                 log.debug("start add request:" + System.currentTimeMillis());
-                RequestHandlers.addRequest(new SeRequest(socketChannel, header));
+                RequestHandlers.addRequest(new SeRequest(socketChannel, header, isKeepAlive));
             } break;
             case POST: {
                 int contentLen = Integer.parseInt(header.getHeaderParameter(Constants.CONTENT_LENGTH));
@@ -91,7 +92,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     System.arraycopy(bytes, headerLenEnd + 4, data, 0, contentLen);
                     //数据读取完毕, 进行下一阶段
                     // post请求, request 实现inputStream需要byte
-                    RequestHandlers.addRequest(new SeRequest(socketChannel, header, data));
+                    RequestHandlers.addRequest(new SeRequest(socketChannel, header, data, isKeepAlive));
                 } else {
                     // 长度太长, 进行第二次读取
                     ByteBuffer buffer = ByteBuffer.allocate(contentLen);
@@ -102,7 +103,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                             // 这里使用copy出来的数组
                             byte[] in = new byte[contentLen];
                             buffer.get(in, 0, contentLen);
-                            RequestHandlers.addRequest(new SeRequest(socketChannel, seHeader, in));
+                            RequestHandlers.addRequest(new SeRequest(socketChannel, seHeader, in, isKeepAlive));
                         }
 
                         @Override
@@ -125,13 +126,11 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
         }
         // 设置keep-alive
-        String timeout = header.getHeaderParameter(SeHeader.KEEP_ALIVE);
-        if (timeout != null) {
-            int time = Integer.parseInt(timeout);
+        if (isKeepAlive) {
             try {
                 if (socketChannel.isOpen()) {
                     socketChannel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-                    socketChannel.read(attachment, time, TimeUnit.MILLISECONDS, attachment, this);
+                    socketChannel.read(attachment, Constants.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, attachment, this);
                 }
             } catch (IOException e) {
                 log.error("set keep alive error;", e);
@@ -212,7 +211,8 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     }
                     break;
                 case 84 : header.setMethod(SeRequest.METHOD.TRACE); headParseIndex += 6; break;
-                default: throw new UnsupportedRequestMethodException("");
+                default:
+                    throw new UnsupportedRequestMethodException(new String(bytes));
             }
 
             log.debug("method:" + header.getMethod());
