@@ -271,7 +271,7 @@ public class SeResponse {
      * 进行gzip压缩
      * @param file file
      */
-    public void GZIPFile(File file, SeResponse response) throws IOException {
+    private void GZIPFile(File file, SeResponse response) throws IOException {
 
         BufferedInputStream bis = new BufferedInputStream(
                 new GZIPInputStream(

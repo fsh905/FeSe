@@ -6,7 +6,7 @@ refer：[nio-httpserver](https://github.com/shenedu/nio-httpserver)
  
  #### Feature：
  * Asynchronous
- * Multi request method (GET, POST)
+ * Request method (GET, POST)
  * Customize dynamic request handler
  #### Configure:
  All config properties is in /src/main/resources/server.properties
@@ -56,3 +56,7 @@ refer：[nio-httpserver](https://github.com/shenedu/nio-httpserver)
  then all url that postfix is .do will send to ***MyRequestHandler***
  #### Install
  * Maven
+ 
+ #### Problems
+ * If can't find a img, will response a 404 page
+ * Post data not parse

@@ -1,5 +1,6 @@
 package bid.fese.common;
 
+import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,7 +25,7 @@ public class ApplicationContext {
     public static String getClassPath() {
         String path = (String) get(Constants.CLASS_PATH);
         if (path == null) {
-            path = ApplicationContext.class.getResource("/").getPath().replace("/bin", "classes");
+            path = ClassLoader.class.getResource("/").getPath();
             put(Constants.CLASS_PATH, path);
         }
         return path;
