@@ -1,10 +1,13 @@
 package bid.fese.handler;
 
+import bid.fese.common.ApplicationContext;
+import bid.fese.common.Constants;
 import bid.fese.entity.SeRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.zip.DeflaterInputStream;
 
 /**
  * Created by feng_sh on 5/23/2017.
@@ -16,9 +19,9 @@ public class RequestHandlers {
     // 这里可以采用优先队列
     private static final List<RequestHandler> handlers = new ArrayList<>(4);
     // 静态文件处理
-    private static ThreadLocal<StaticDispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
+    private static ThreadLocal<DispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 动态请求处理
-    private static ThreadLocal<DynamicDispatcherHandler> dynamicDispatcherHandlerThreadLocal = new ThreadLocal<>();
+    private static ThreadLocal<DispatcherHandler> dynamicDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 请求分配
     private static ThreadLocal<RequestDispatcherHandler> requestDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 每个线程正在处理的请求数, 可用于负载均衡
@@ -46,8 +49,8 @@ public class RequestHandlers {
      * 静态资源处理
      * @return 静态资源处理器， 线程独享
      */
-    public static StaticDispatcherHandler getStaticDispatcherHandler() {
-        StaticDispatcherHandler handler = staticDispatcherHandlerThreadLocal.get();
+    public static DispatcherHandler getStaticDispatcherHandler() {
+        DispatcherHandler handler = staticDispatcherHandlerThreadLocal.get();
         if (handler == null) {
             handler = new StaticDispatcherHandler();
             staticDispatcherHandlerThreadLocal.set(handler);
@@ -60,10 +63,28 @@ public class RequestHandlers {
      * 线程动态资源分配
      * @return 动态资源分陪器， 线程独享
      */
-    public static DynamicDispatcherHandler getDynamicDispathcerHandler() {
-        DynamicDispatcherHandler handler = dynamicDispatcherHandlerThreadLocal.get();
+    public static DispatcherHandler getDynamicDispathcerHandler() {
+        DispatcherHandler handler = dynamicDispatcherHandlerThreadLocal.get();
         if (handler == null) {
-            handler = new DynamicDispatcherHandler();
+            // todo 这里可以进行配置处理器
+            String name = (String) ApplicationContext.get(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER);
+            if (name == null) {
+                handler = new DynamicDispatcherHandler();
+            } else {
+                try {
+                    handler = (DispatcherHandler) Class.forName(name).newInstance();
+                    logger.info("use specific dynamic dispatcher handler;" + name);
+                } catch (InstantiationException e) {
+                    logger.error("can't convert , you must implement! use default", e);
+                    handler = new DynamicDispatcherHandler();
+                } catch (IllegalAccessException e) {
+                    logger.error("can't use dynamic request handler! use default", e);
+                    handler = new DynamicDispatcherHandler();
+                } catch (ClassNotFoundException e) {
+                    logger.error("can't find dynamic request handler! use default", e);
+                    handler = new DynamicDispatcherHandler();
+                }
+            }
             dynamicDispatcherHandlerThreadLocal.set(handler);
         }
         return handler;

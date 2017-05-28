@@ -11,11 +11,15 @@ import java.util.regex.Pattern;
 public class PatternTest {
     @Test
     public void test() {
-        Pattern pattern = Pattern.compile("/?/static/?\\S+");
+/*        Pattern pattern = Pattern.compile("/?/static/?\\S+");
         System.out.println(pattern.matcher("/static/index").matches());
         System.out.println(pattern.matcher("/static/").matches());
         System.out.println(pattern.matcher("/static/风").matches());
         System.out.println(pattern.matcher("/static/index html").matches());
         System.out.println(pattern.matcher("/static/index_html").matches());
+     */
+        Pattern p1 = Pattern.compile("\\W+.(jpg)|(gif)$");
+        System.out.println(p1.matcher("mat.jpg").matches());
+
     }
 }

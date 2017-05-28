@@ -70,10 +70,13 @@ public class SeResponse {
     }
 
     public void writeFile(File file) {
+        // todo 判断文件类型， 然后选择相应的错误请求
         writeFile(file, true);
     }
 
     private void writeFile(File file, boolean isShowPage) {
+        // 目前的逻辑是当请求静态文件时， 如果文件不存在怎首先返回404页面，
+        // 但是如果静态文件类型是图片或者视频时应该返回404请求而不是页面
         logger.debug("write file:" + file.getAbsolutePath());
         if (!file.exists()) {
             logger.error("not found:" + file.getAbsolutePath());

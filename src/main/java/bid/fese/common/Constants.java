@@ -19,7 +19,8 @@ public class Constants {
     // 长度
     public static final String CONTENT_LENGTH = "Content-Length";
 
-    public static final long DEFAULT_KEEP_ALIVE_TIME = 300L;
+    // keep alive时长， 太短的话可能读取还未开始
+    public static final long DEFAULT_KEEP_ALIVE_TIME = 1000L;
     // classpath
     public static final String CLASS_PATH = "CLASS_PATH";
 
@@ -27,6 +28,7 @@ public class Constants {
     public static final String CONFIGURE_PATH = "server.properties";
     public static final String CONFIG_SERVER_PORT = "server_port";
     public static final String CONFIG_CONTROLLER_PATH = "controller_path";
+    public static final String CONFIG_DYNAMIC_REQUEST_HANDLER = "dynamic_request_handler";
     public static final String CONFIG_STATIC_RESOURCE_PATH = "static_resource_path";
     public static final String CONFIG_REQUEST_POSTFIX = "request_postfix";
     public static final String CONFIG_REQUEST_HANDLER = "request_handler";

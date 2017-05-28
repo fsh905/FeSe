@@ -21,14 +21,21 @@ import java.util.concurrent.TimeUnit;
 public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     private AsynchronousSocketChannel socketChannel;
     private static final Logger log = LogManager.getLogger(ReadHandler.class);
+    private String socketAddress;
 
     public ReadHandler(AsynchronousSocketChannel socketChannel) {
         this.socketChannel = socketChannel;
+        try {
+            this.socketAddress = socketChannel.getRemoteAddress().toString();
+        } catch (IOException e) {
+            log.error("get remote address error");
+        }
     }
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
+
         log.debug("read len:" + readBytesLen);
-        if (readBytesLen <= 0) {
+        if (readBytesLen <= 0 || readBytesLen == Constants.DEFAULT_UPLOAD_SIZE) {
             log.error("the request len is 0, attempt to close;");
             if (socketChannel.isOpen()) {
                 try {
@@ -39,27 +46,20 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             }
             return;
         }
-        log.debug("get bytes start:" + System.currentTimeMillis());
-
+        log.debug("get bytes and parse header start");
         byte[] bytes = new byte[readBytesLen];
         attachment.flip();          //the length of position to limit
         attachment.get(bytes);
         attachment.clear();
-        log.debug("get bytes end:" + System.currentTimeMillis());
-        // 测试
-        long t = System.currentTimeMillis();
-        log.debug("start parse Header:" + t);
-
-        // 头部长度
-        int headerLenEnd = RequestHeaderParser.find(bytes, Constants.HEADER_END, 10);
 
         // 读取头部信息
+        // 头部结尾
+        int headEndLen = RequestHeaderParser.find(bytes, Constants.HEADER_END, 10);
         SeHeader header = null;
         try {
-             header = RequestHeaderParser.parseHeader(bytes, headerLenEnd);
+            header = RequestHeaderParser.parseHeader(bytes, headEndLen);
         } catch (UnsupportedRequestMethodException e) {
             log.error("parse header error", e);
-
         }
         if (header == null) {
             // 关闭连接
@@ -67,13 +67,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 try {
                     socketChannel.close();
                 } catch (IOException e1) {
-                    log.error("close socket error", e1);
+                    log.error("close socket error, address:" + socketAddress, e1);
                 }
             }
             return;
         }
 
-        log.debug("end parse Header; use time:" + (System.currentTimeMillis() - t));
+        log.debug("end parse Header; use time:" + System.currentTimeMillis());
+
         boolean isKeepAlive = header.getHeaderParameter(SeHeader.CONNECTION) != null;
 
         switch (header.getMethod()) {
@@ -82,31 +83,54 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 // request不需要inputStream
                 log.debug("start add request:" + System.currentTimeMillis());
                 RequestHandlers.addRequest(new SeRequest(socketChannel, header, isKeepAlive));
+
+                // 设置keep-alive
+                if (isKeepAlive) {
+                    keepAlive(attachment);
+                }
+
             } break;
             case POST: {
                 int contentLen = Integer.parseInt(header.getHeaderParameter(Constants.CONTENT_LENGTH));
                 log.debug("contentLen:" + contentLen);
-                if (contentLen <= Constants.DEFAULT_UPLOAD_SIZE - headerLenEnd - 4) {
-                    // 长度合适
-                    byte[] data = new byte[contentLen];
-                    System.arraycopy(bytes, headerLenEnd + 4, data, 0, contentLen);
-                    log.debug("read short post, data is:\n" + new String(data));
-                    //数据读取完毕, 进行下一阶段
-                    // post请求, request 实现inputStream需要byte
-                    RequestHandlers.addRequest(new SeRequest(socketChannel, header, data, isKeepAlive));
+                if (contentLen > Constants.MAX_UPLOAD_SIZE) {
+                    log.error("the post data is too large, close this connection addredd:" + socketAddress);
+                    try {
+                        socketChannel.close();
+                    } catch (IOException e) {
+                        log.error("close large post conncetion failed, address:" + socketAddress);
+                    }
+                    return;
+                }
+                if (contentLen + headEndLen + 4 <= Constants.DEFAULT_UPLOAD_SIZE) {
+
+                    // 传输的数据较短
+                    byte[] in = new byte[contentLen];
+                    System.arraycopy(bytes, headEndLen + 4, in, 0, contentLen);
+                    log.debug("short post data:\n" + new String(in));
+                    RequestHandlers.addRequest(
+                            new SeRequest(socketChannel, header, in, isKeepAlive));
+                    // 设置keep-alive
+                    if (isKeepAlive) {
+                        keepAlive(attachment);
+                    }
                 } else {
-                    // 长度太长, 进行第二次读取
-                    log.debug("read long post, len is:" + contentLen);
+
+                    // 当post的数据与头部长度和小于buffer长度时会一次性读取完
+                    // 第一次只读取头部
+                    // 开始第二次读取
                     ByteBuffer buffer = ByteBuffer.allocate(contentLen);
-                    buffer.put(bytes, headerLenEnd + 4, bytes.length - headerLenEnd - 4);
                     socketChannel.read(buffer, header, new CompletionHandler<Integer, SeHeader>() {
                         @Override
-                        public void completed(Integer readLen, SeHeader seHeader) {
-                            // 这里使用copy出来的数组
-                            byte[] in = new byte[contentLen];
-                            buffer.get(in, 0, contentLen);
-                            log.debug("read long post success; data is:\n" + new String(in));
-                            RequestHandlers.addRequest(new SeRequest(socketChannel, seHeader, in, isKeepAlive));
+                        public void completed(Integer result, SeHeader seHeader) {
+                            log.debug("read large post data success, readLen:" + result);
+                            log.debug("read large post data is:\n" + new String(buffer.array()));
+                            RequestHandlers.addRequest(
+                                    new SeRequest(socketChannel, seHeader, buffer.array(), isKeepAlive));
+                            // 设置keep-alive
+                            if (isKeepAlive) {
+                                keepAlive(attachment);
+                            }
                         }
 
                         @Override
@@ -125,43 +149,43 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     log.error("close input error;", e);
                 }
             }
-
-
         }
-        // 设置keep-alive
-        if (isKeepAlive) {
-            try {
-                if (socketChannel.isOpen()) {
-                    socketChannel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-                    socketChannel.read(attachment, Constants.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, attachment, this);
-                }
-            } catch (IOException e) {
-                log.error("set keep alive error; close", e);
-                if (socketChannel.isOpen()) {
-                    try {
-                        socketChannel.close();
-                    } catch (IOException e1) {
-                        log.error("close socketChannel error");
-                    }
+     }
+
+    private void keepAlive(ByteBuffer attachment) {
+        try {
+            if (socketChannel.isOpen()) {
+                socketChannel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+                socketChannel.read(attachment, Constants.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, attachment, this);
+            }
+        } catch (IOException e) {
+            log.error("set keep alive error; close " + socketAddress, e);
+            if (socketChannel.isOpen()) {
+                try {
+                    socketChannel.close();
+                } catch (IOException e1) {
+                    log.error("close socketChannel error " + socketAddress);
                 }
             }
-
         }
     }
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
         // when read is fail
-        log.error("read error! close socket", new String(attachment.array()), exc);
+        log.error("read error! close socket:" + socketAddress, exc);
         if (socketChannel.isOpen()) {
             try {
                 socketChannel.close();
             } catch (IOException e) {
-                log.error("close socket error", e);
+                log.error("close socket error" + socketAddress, e);
             }
         }
     }
 
+    /**
+     * 解析请求头
+     */
     private static class RequestHeaderParser {
 
         public static SeHeader parseHeader(byte[] bytes, int end) throws UnsupportedRequestMethodException {

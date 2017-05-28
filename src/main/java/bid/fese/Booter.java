@@ -52,13 +52,13 @@ public class Booter {
                         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, Integer.parseInt(props.get(k)));
                         break;
                     case Constants.CONFIG_STATIC_RESOURCE_PATH :
-                        // /?/static//?\\S+
-                        // /?static/?\\S+
-//                        ApplicationContext.put(Constants.CONFIG_STATIC_RESOURCE_PATH, Pattern.compile("/?" + props.get(k) + "/?\\S+"));
                         ApplicationContext.put(Constants.CONFIG_STATIC_RESOURCE_PATH, props.get(k));
                         break;
                     case Constants.CONFIG_CONTROLLER_PATH :
                         ApplicationContext.put(Constants.CONFIG_CONTROLLER_PATH, props.get(k));
+                        break;
+                    case Constants.CONFIG_DYNAMIC_REQUEST_HANDLER :
+                        ApplicationContext.put(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER, props.get(k));
                         break;
                     case Constants.CONFIG_REQUEST_POSTFIX :
                         ApplicationContext.put(Constants.CONFIG_REQUEST_POSTFIX, props.get(k).toLowerCase().toCharArray());
