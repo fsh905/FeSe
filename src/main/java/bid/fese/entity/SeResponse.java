@@ -208,34 +208,7 @@ public class SeResponse {
 
         logger.debug("response header:\n" + header.toString());
         logger.info("start send response:" + System.currentTimeMillis());
-        socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
-            @Override
-            public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-                try {
-                    logger.info("write success! and address is:" + socketChannel.getRemoteAddress());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    // 如果设置keepAlive
-                    if (socketChannel.isOpen() && !SeResponse.this.isKeepAlive) {
-                        logger.debug("connection close time:" + System.currentTimeMillis());
-                        logger.debug("close socket" + socketChannel.getRemoteAddress());
-                        socketChannel.close();
-                    } else {
-                        logger.debug("keep-alive not close");
-                    }
-                } catch (IOException e) {
-                    logger.error("close error");
-                }
-            }
-
-
-            @Override
-            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                logger.error("write error", attachment, exc);
-            }
-        });
+        socketChannel.write(byteBuffer, socketChannel, new WriteHandler());
 
     }
 
@@ -267,25 +240,32 @@ public class SeResponse {
         }
     }
 
-    /**
-     * 进行gzip压缩
-     * @param file file
-     */
-    private void GZIPFile(File file, SeResponse response) throws IOException {
-
-        BufferedInputStream bis = new BufferedInputStream(
-                new GZIPInputStream(
-                        new FileInputStream(file)));
-        BufferedOutputStream bos = new BufferedOutputStream(response.getOutStream());
-
-        byte[] bytes = new byte[1024];
-        int l = 0;
-        while ((l = bis.read(bytes)) != -1) {
-            bos.write(bytes, 0, l);
+    private class WriteHandler implements CompletionHandler<Integer, AsynchronousSocketChannel> {
+        @Override
+        public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
+            try {
+                logger.info("write success! and address is:" + socketChannel.getRemoteAddress());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                // 如果设置keepAlive
+                if (socketChannel.isOpen() && !SeResponse.this.isKeepAlive) {
+                    logger.debug("connection close time:" + System.currentTimeMillis());
+                    logger.debug("close socket" + socketChannel.getRemoteAddress());
+                    socketChannel.close();
+                } else {
+                    logger.debug("alreadey set keep-alive, this socket not need close");
+                }
+            } catch (IOException e) {
+                logger.error("close error");
+            }
         }
-        bos.flush();
-        bos.close();
-        bis.close();
-    }
 
+
+        @Override
+        public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+            logger.error("write error", attachment, exc);
+        }
+    }
 }

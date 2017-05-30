@@ -84,14 +84,16 @@ public class Booter {
 
     private Map<String, String> getProp(String configFilePath) throws IOException {
         Map<String, String> props = new HashMap<>();
-        BufferedReader reader = new BufferedReader(new FileReader(new File(configFilePath)));
+        File propFile = new File(configFilePath);
+        logger.info(propFile.getAbsolutePath());
+        BufferedReader reader = new BufferedReader(new FileReader(propFile));
         String line = null;
         while ((line = reader.readLine()) != null) {
             if (line.length() < 3 || line.trim().charAt(0) == '#') {
                 continue;
             }
             String[] kv = line.trim().split("=");
-            logger.debug("prop: k:"+ kv[0] + "-\t" + kv[1] + "-");
+            logger.debug("server configure: ["+ kv[0] + "]\t[" + kv[1] + "]");
             props.put(kv[0], kv[1]);
         }
         reader.close();

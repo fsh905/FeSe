@@ -10,6 +10,8 @@ import java.util.Set;
  */
 public class SeHeader {
 
+    public static final String PROTOCOL_1_1 = "HTTP/1.1";
+    public static final String PROTOCOL_1_0 = "HTTP/1.0";
     public static final String OK_200 = "HTTP/1.1 200 OK";
     public static final String NEWLINE = "\r\n";
     public static final String NOT_FOUND_404 = "HTTP/1.1 404 Not Found";
@@ -26,6 +28,7 @@ public class SeHeader {
     public static final String SERVER = "Server";
     public static final String COOKIES = "Cookie";
     public static final String SET_COOKIE = "Set-Cookie";
+    public static final byte[] HEADER_END = {13, 10, 13, 10};
 
 
 
@@ -41,7 +44,6 @@ public class SeHeader {
         this.requestParameters = new HashMap<>();
         this.headerParameters = new HashMap<>();
         this.status = OK_200;
-
     }
 
     public void clear() {

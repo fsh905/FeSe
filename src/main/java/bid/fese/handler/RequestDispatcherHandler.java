@@ -19,9 +19,11 @@ public class RequestDispatcherHandler implements DispatcherHandler {
     @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
         if (isStatic(request.getUrl())) {
+            logger.info(request.getRemoteAddress() + " ["+request.getMethod()+"] " + request.getUrl() + " [static]");
             logger.debug(request.getUrl() + " is assign to static:" + System.currentTimeMillis());
             RequestHandlers.getStaticDispatcherHandler().handlerRequest(request, response);
         } else {
+            logger.info(request.getRemoteAddress() + " ["+request.getMethod()+"] " + request.getUrl() + " [dynamic]");
             logger.debug(request.getUrl() + " is assign to dynamic:" + System.currentTimeMillis());
             RequestHandlers.getDynamicDispathcerHandler().handlerRequest(request, response);
         }
