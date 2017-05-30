@@ -1,5 +1,7 @@
 package bid.fese.common;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by feng_sh on 5/23/2017.
  * 存放全局变量
@@ -15,12 +17,12 @@ public class Constants {
 
     public static final int DEFAULT_UPLOAD_SIZE = 1024 * 8;
 
-    public static final byte[] HEADER_END = {13, 10, 13, 10};
-    // 长度
-    public static final String CONTENT_LENGTH = "Content-Length";
 
-    // keep alive时长， 太短的话可能读取还未开始
-    public static final long DEFAULT_KEEP_ALIVE_TIME = 1000L;
+
+    // keep alive时长， 默认15s
+    public static final long DEFAULT_KEEP_ALIVE_TIME = 15L;
+    public static final TimeUnit DEFAULT_KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
+
     // classpath
     public static final String CLASS_PATH = "CLASS_PATH";
 

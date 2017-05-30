@@ -8,11 +8,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by feng_ on 2016/12/8.
@@ -34,19 +32,23 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
 
-        log.debug("read len:" + readBytesLen);
-        if (readBytesLen <= 0 || readBytesLen == Constants.DEFAULT_UPLOAD_SIZE) {
-            log.error("the request len is 0, attempt to close;");
+        if (readBytesLen < 0) {
             if (socketChannel.isOpen()) {
+                attachment.clear();
+                socketChannel.read(attachment,
+                        Constants.DEFAULT_KEEP_ALIVE_TIME,
+                        Constants.DEFAULT_KEEP_ALIVE_TIME_UNIT,
+                        attachment, this);
+            } else {
                 try {
                     socketChannel.close();
                 } catch (IOException e) {
-                    log.error("close socket error", e);
+                    e.printStackTrace();
                 }
             }
             return;
         }
-        log.debug("get bytes and parse header start");
+
         byte[] bytes = new byte[readBytesLen];
         attachment.flip();          //the length of position to limit
         attachment.get(bytes);
@@ -54,7 +56,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
         // 读取头部信息
         // 头部结尾
-        int headEndLen = RequestHeaderParser.find(bytes, Constants.HEADER_END, 10);
+        int headEndLen = RequestHeaderParser.find(bytes, SeHeader.HEADER_END, 10);
         SeHeader header = null;
         try {
             header = RequestHeaderParser.parseHeader(bytes, headEndLen);
@@ -66,6 +68,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             if (socketChannel.isOpen()) {
                 try {
                     socketChannel.close();
+                    log.info("parse header error, close socket success");
                 } catch (IOException e1) {
                     log.error("close socket error, address:" + socketAddress, e1);
                 }
@@ -73,26 +76,35 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             return;
         }
 
-        log.debug("end parse Header; use time:" + System.currentTimeMillis());
+        // 当协议为http/1.0时， 检查connection是否为keep-alive
+        // 当协议为http/1.1时， 默认为keep-alive直到收到connection: close或者超时自动关闭
+        boolean isKeepAlive = true;
+        if (header.getProtocol().equals(SeHeader.PROTOCOL_1_0)) {
+            if (header.getHeaderParameter(SeHeader.CONNECTION) == null || header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
+                log.debug("keep-alive not set");
+                isKeepAlive = false;
+            }
+        } else {
+            if (header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
+                log.debug("keep-alive not set");
+                isKeepAlive = false;
+            }
+        }
 
-        boolean isKeepAlive = header.getHeaderParameter(SeHeader.CONNECTION) != null;
 
         switch (header.getMethod()) {
             case GET: {
                 //数据读取完毕, 进行下一阶段
                 // request不需要inputStream
-                log.debug("start add request:" + System.currentTimeMillis());
                 RequestHandlers.addRequest(new SeRequest(socketChannel, header, isKeepAlive));
-
                 // 设置keep-alive
                 if (isKeepAlive) {
                     keepAlive(attachment);
                 }
-
             } break;
             case POST: {
-                int contentLen = Integer.parseInt(header.getHeaderParameter(Constants.CONTENT_LENGTH));
-                log.debug("contentLen:" + contentLen);
+                int contentLen = Integer.parseInt(header.getHeaderParameter(SeHeader.CONTENT_LENGTH));
+                log.debug("post contentLen:" + contentLen);
                 if (contentLen > Constants.MAX_UPLOAD_SIZE) {
                     log.error("the post data is too large, close this connection addredd:" + socketAddress);
                     try {
@@ -107,7 +119,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     // 传输的数据较短
                     byte[] in = new byte[contentLen];
                     System.arraycopy(bytes, headEndLen + 4, in, 0, contentLen);
-                    log.debug("short post data:\n" + new String(in));
+
                     RequestHandlers.addRequest(
                             new SeRequest(socketChannel, header, in, isKeepAlive));
                     // 设置keep-alive
@@ -120,15 +132,15 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     // 第一次只读取头部
                     // 开始第二次读取
                     ByteBuffer buffer = ByteBuffer.allocate(contentLen);
+                    final boolean innerKeepAlive = isKeepAlive;
                     socketChannel.read(buffer, header, new CompletionHandler<Integer, SeHeader>() {
                         @Override
                         public void completed(Integer result, SeHeader seHeader) {
                             log.debug("read large post data success, readLen:" + result);
-                            log.debug("read large post data is:\n" + new String(buffer.array()));
                             RequestHandlers.addRequest(
-                                    new SeRequest(socketChannel, seHeader, buffer.array(), isKeepAlive));
+                                    new SeRequest(socketChannel, seHeader, buffer.array(), innerKeepAlive));
                             // 设置keep-alive
-                            if (isKeepAlive) {
+                            if (innerKeepAlive) {
                                 keepAlive(attachment);
                             }
                         }
@@ -142,31 +154,21 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 }
             } break;
             default: {
-                log.error("this method is not support!");
-                try {
-                    socketChannel.shutdownInput();
-                } catch (IOException e) {
-                    log.error("close input error;", e);
+                log.error("this request method is not support!");
+                attachment.clear();
+                if (isKeepAlive) {
+                    keepAlive(attachment);
                 }
             }
         }
      }
 
     private void keepAlive(ByteBuffer attachment) {
-        try {
-            if (socketChannel.isOpen()) {
-                socketChannel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-                socketChannel.read(attachment, Constants.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, attachment, this);
-            }
-        } catch (IOException e) {
-            log.error("set keep alive error; close " + socketAddress, e);
-            if (socketChannel.isOpen()) {
-                try {
-                    socketChannel.close();
-                } catch (IOException e1) {
-                    log.error("close socketChannel error " + socketAddress);
-                }
-            }
+        if (socketChannel.isOpen()) {
+            socketChannel.read(attachment,
+                    Constants.DEFAULT_KEEP_ALIVE_TIME,
+                    Constants.DEFAULT_KEEP_ALIVE_TIME_UNIT,
+                    attachment, this);
         }
     }
 
@@ -249,12 +251,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             }
 
             log.debug("method:" + header.getMethod());
-/*
-        while (bytes[headParseIndex] != ' '){
-            headParseIndex++;
-        }
-*/
-//        headParseIndex += 1;
+
             int lastPosi = headParseIndex;
             int index = 0;
             //request
