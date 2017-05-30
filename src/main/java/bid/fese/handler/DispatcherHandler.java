@@ -8,5 +8,9 @@ import bid.fese.entity.SeResponse;
  * 转发
  */
 public interface DispatcherHandler {
+    /**
+     * 初始化时调用
+     */
+    void initHandler();
     void handlerRequest(SeRequest request, SeResponse response);
 }

@@ -11,6 +11,9 @@ import bid.fese.entity.SeResponse;
  */
 public class StaticDispatcherHandler implements DispatcherHandler {
     @Override
+    public void initHandler() {}
+
+    @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
         String url = request.getUrl();
         if (url.length() == 0 || url.length() == 1) {

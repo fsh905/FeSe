@@ -20,10 +20,6 @@ public class RequestHandlers {
     private static final List<RequestHandler> handlers = new ArrayList<>(4);
     // 静态文件处理
     private static ThreadLocal<DispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
-    // 动态请求处理
-    private static ThreadLocal<DispatcherHandler> dynamicDispatcherHandlerThreadLocal = new ThreadLocal<>();
-    // 请求分配
-    private static ThreadLocal<RequestDispatcherHandler> requestDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 每个线程正在处理的请求数, 可用于负载均衡
     private static ThreadLocal<Integer> requestCount = new ThreadLocal<Integer>() {
         @Override
@@ -32,7 +28,45 @@ public class RequestHandlers {
         }
     };
 
+    private static DispatcherHandler dynamicDispatcherHandler;
+
     private RequestHandlers() {}
+
+    /**
+     * 进行资源初始化
+     */
+    public static void initHandlers() {
+        // 全局单例的进行初始化
+        initDynamicDispatcherHandler();
+    }
+
+    /**
+     * 初始化动态资源处理器
+     */
+    private static void initDynamicDispatcherHandler() {
+        if (dynamicDispatcherHandler == null) {
+            String name = (String) ApplicationContext.get(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER);
+            if (name == null) {
+                dynamicDispatcherHandler = new DynamicDispatcherHandler();
+            } else {
+                try {
+                    dynamicDispatcherHandler = (DispatcherHandler) Class.forName(name).newInstance();
+                    logger.info("use specific dynamic dispatcher handler;" + name);
+                } catch (InstantiationException e) {
+                    logger.error("can't convert , you must implement! use default", e);
+                    dynamicDispatcherHandler = new DynamicDispatcherHandler();
+                } catch (IllegalAccessException e) {
+                    logger.error("can't use dynamic request handler! use default", e);
+                    dynamicDispatcherHandler = new DynamicDispatcherHandler();
+                } catch (ClassNotFoundException e) {
+                    logger.error("can't find dynamic request handler! use default", e);
+                    dynamicDispatcherHandler = new DynamicDispatcherHandler();
+                }
+            }
+        }
+        // 初始化
+        dynamicDispatcherHandler.initHandler();
+    }
 
     /**
      * 这里的随机方式有问题， 可以采用负载均衡，根据当前handler的连接数来判断选取哪一个
@@ -41,8 +75,7 @@ public class RequestHandlers {
     public static RequestHandler getHandler() {
         int i = (int) (Math.random() * 10) % handlers.size();
         logger.info("dispatcher to handler-" + i);
-        RequestHandler handler = handlers.get(i);
-        return handler;
+        return handlers.get(i);
     }
 
     /**
@@ -60,45 +93,11 @@ public class RequestHandlers {
     }
 
     /**
-     * 线程动态资源分配
-     * @return 动态资源分陪器， 线程独享
+     * 动态资源分配， 目前只能实现全局单例
+     * @return 动态资源分陪器， 全局共享
      */
-    public static DispatcherHandler getDynamicDispathcerHandler() {
-        DispatcherHandler handler = dynamicDispatcherHandlerThreadLocal.get();
-        if (handler == null) {
-            // todo 这里可以进行配置处理器
-            String name = (String) ApplicationContext.get(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER);
-            if (name == null) {
-                handler = new DynamicDispatcherHandler();
-            } else {
-                try {
-                    handler = (DispatcherHandler) Class.forName(name).newInstance();
-                    logger.info("use specific dynamic dispatcher handler;" + name);
-                } catch (InstantiationException e) {
-                    logger.error("can't convert , you must implement! use default", e);
-                    handler = new DynamicDispatcherHandler();
-                } catch (IllegalAccessException e) {
-                    logger.error("can't use dynamic request handler! use default", e);
-                    handler = new DynamicDispatcherHandler();
-                } catch (ClassNotFoundException e) {
-                    logger.error("can't find dynamic request handler! use default", e);
-                    handler = new DynamicDispatcherHandler();
-                }
-            }
-            dynamicDispatcherHandlerThreadLocal.set(handler);
-        }
-        return handler;
-    }
-
-    /**
-     * @return 资源分配器， 线程独享
-     */
-    public static RequestDispatcherHandler getRequestDispatcherHandler() {
-        RequestDispatcherHandler handler = requestDispatcherHandlerThreadLocal.get();
-        if (handler == null) {
-            handler = new RequestDispatcherHandler();
-            requestDispatcherHandlerThreadLocal.set(handler);
-        }
+    public static DispatcherHandler getDynamicDispatcherHandler() {
+        DispatcherHandler handler = null;
         return handler;
     }
 

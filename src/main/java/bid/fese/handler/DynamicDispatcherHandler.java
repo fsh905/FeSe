@@ -10,6 +10,9 @@ import bid.fese.entity.SeResponse;
  */
 public class DynamicDispatcherHandler implements DispatcherHandler {
     @Override
+    public void initHandler() {}
+
+    @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
         request.getHeader().setStatus(SeHeader.NOT_FOUND_404);
         response.flush();

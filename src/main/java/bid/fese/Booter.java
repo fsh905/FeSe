@@ -26,7 +26,7 @@ public class Booter {
     public static void main(String[] args) {
         Booter booter = new Booter();
         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, 8080);
-        booter.config();
+        booter.init();
         FeServer server = new FeServer((int) ApplicationContext.get(Constants.CONFIG_SERVER_PORT));
         int cpu = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < cpu; i++) {
@@ -35,6 +35,12 @@ public class Booter {
             new Thread(handler, "handler-" + i).start();
         }
         new Thread(server, "server").start();
+    }
+
+    private void init() {
+        config();
+        // 初始化一些配置
+        RequestHandlers.initHandlers();
     }
 
     private void config() {
