@@ -25,7 +25,12 @@ public class ApplicationContext {
     public static String getClassPath() {
         String path = (String) get(Constants.CLASS_PATH);
         if (path == null) {
-            path = ClassLoader.class.getResource("/").getPath();
+            URL url = ClassLoader.class.getResource("/");
+            if (url != null) {
+                path = ClassLoader.class.getResource("/").getPath();
+            } else {
+                path = "";
+            }
             put(Constants.CLASS_PATH, path);
         }
         return path;

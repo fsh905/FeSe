@@ -267,25 +267,4 @@ public class SeResponse {
         }
     }
 
-    /**
-     * 进行gzip压缩
-     * @param file file
-     */
-    private void GZIPFile(File file, SeResponse response) throws IOException {
-
-        BufferedInputStream bis = new BufferedInputStream(
-                new GZIPInputStream(
-                        new FileInputStream(file)));
-        BufferedOutputStream bos = new BufferedOutputStream(response.getOutStream());
-
-        byte[] bytes = new byte[1024];
-        int l = 0;
-        while ((l = bis.read(bytes)) != -1) {
-            bos.write(bytes, 0, l);
-        }
-        bos.flush();
-        bos.close();
-        bis.close();
-    }
-
 }
