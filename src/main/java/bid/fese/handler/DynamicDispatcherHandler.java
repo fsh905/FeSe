@@ -16,7 +16,8 @@ public class DynamicDispatcherHandler implements DispatcherHandler {
 
     @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
-        request.getHeader().setStatus(SeHeader.NOT_FOUND_404);
+        response.getPrintWriter().print("Dynamic request handler is not implement");
+        response.getPrintWriter().flush();
         response.flush();
     }
 }
