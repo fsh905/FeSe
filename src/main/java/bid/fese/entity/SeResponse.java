@@ -26,7 +26,8 @@ public class SeResponse {
     private AsynchronousSocketChannel socketChannel;
     private SeHeader header;
     private OutStream outStream;
-    private byte[] contents;
+    private PrintWriter printWriter;
+//    private byte[] contents;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
 
@@ -103,9 +104,11 @@ public class SeResponse {
                     goz.flush();
                 } else {
                     logger.debug("not use gzip");
-                    long len = file.length();
-                    contents = new byte[(int) len];
-                    fis.read(contents);
+                    byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
+                    int len = 0;
+                    while ((len = fis.read(bytes)) != -1) {
+                        outStream.write(bytes, 0, len);
+                    }
                 }
                 String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
                 if (fileType != null) {
@@ -150,10 +153,12 @@ public class SeResponse {
         }
     }
 
+
     private void _404_notFoundPage() {
         writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
-                + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
+            + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
     }
+
 
     private void _500_Server_Error_Page() {
         writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
@@ -177,34 +182,16 @@ public class SeResponse {
      * 主要功能是发送, 必须执行flush才能发送
      */
     public void flush() {
-        logger.debug("flush start time:" + System.currentTimeMillis());
-        ByteBuffer byteBuffer = null;
-        if (outStream == null) {
-            // 再次判断contents是否有, 因此 首先推荐使用outStream
-            if (contents == null) {
-                header.setContentLength(0);
-                byte[] headerBytes = header.toString().getBytes();
-                byteBuffer = ByteBuffer.allocate(headerBytes.length);
-                byteBuffer.put(headerBytes);
-                byteBuffer.flip();
-            } else {
-                header.setContentLength(contents.length);
-                byte[] headerBytes = header.toString().getBytes();
-                byteBuffer = ByteBuffer.allocate(headerBytes.length + contents.length);
-                byteBuffer.put(headerBytes, 0, headerBytes.length);
-                byteBuffer.put(contents, 0, contents.length);
-                byteBuffer.flip();
-            }
-        } else {
-            // 首先判断out是否有
-            header.setContentLength(outStream.nextBytes);
-            byte[] headerBytes = header.toString().getBytes();
-            byte[] outs = outStream.bytes;
-            byteBuffer = ByteBuffer.allocate(headerBytes.length + outStream.nextBytes);
-            byteBuffer.put(headerBytes, 0 , headerBytes.length);
-            byteBuffer.put(outs, 0, outStream.nextBytes);
-            byteBuffer.flip();
-        }
+        logger.debug("flush start");
+
+        // 统一使用outStream接口
+        header.setContentLength(outStream.nextBytes);
+        byte[] headerBytes = header.toString().getBytes();
+        byte[] outs = outStream.bytes;
+        ByteBuffer byteBuffer = ByteBuffer.allocate(headerBytes.length + outStream.nextBytes);
+        byteBuffer.put(headerBytes, 0 , headerBytes.length);
+        byteBuffer.put(outs, 0, outStream.nextBytes);
+        byteBuffer.flip();
 
         logger.debug("response header:\n" + header.toString());
         logger.info("start send response:" + System.currentTimeMillis());
@@ -217,6 +204,13 @@ public class SeResponse {
             outStream = new OutStream();
         }
         return outStream;
+    }
+
+    public PrintWriter getPrintWriter() {
+        if (printWriter == null) {
+            printWriter = new PrintWriter(getOutStream());
+        }
+        return printWriter;
     }
 
     private class OutStream extends OutputStream{
