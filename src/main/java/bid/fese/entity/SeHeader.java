@@ -143,6 +143,13 @@ public class SeHeader {
         for (String key : keys) {
             sb.append(key).append(": ").append(headerParameters.get(key)).append(NEWLINE);
         }
+        if (!cookies.isEmpty()) {
+            Set<String> cs = cookies.getNames();
+            for (String c : cs) {
+                sb.append(SeHeader.SET_COOKIE).append(": ")
+                        .append(c).append("=").append(cookies.get(c)).append(NEWLINE);
+            }
+        }
         sb.append(NEWLINE);
         return sb.toString();
     }
