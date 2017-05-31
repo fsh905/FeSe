@@ -10,7 +10,9 @@ import bid.fese.entity.SeResponse;
  */
 public class DynamicDispatcherHandler implements DispatcherHandler {
     @Override
-    public void initHandler() {}
+    public void initHandler() {
+        System.out.println("init dynamic");
+    }
 
     @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
