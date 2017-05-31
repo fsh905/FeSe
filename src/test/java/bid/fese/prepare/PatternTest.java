@@ -2,6 +2,7 @@ package bid.fese.prepare;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
@@ -18,8 +19,13 @@ public class PatternTest {
         System.out.println(pattern.matcher("/static/index html").matches());
         System.out.println(pattern.matcher("/static/index_html").matches());
      */
-        Pattern p1 = Pattern.compile("\\W+.(jpg)|(gif)$");
-        System.out.println(p1.matcher("mat.jpg").matches());
+/*        Pattern p1 = Pattern.compile("\\W+.(jpg)|(gif)$");
+        System.out.println(p1.matcher("mat.jpg").matches());*/
 
+        Object[] os = new Object[3][2];
+        for (int i = 0; i < os.length; i++) {
+            os[i] = new Object[]{i, "" + i};
+        }
+        System.out.println(Arrays.deepToString(os));
     }
 }

@@ -23,7 +23,7 @@ public class DefaultInterceptor implements Interceptor
 
     @Override
     public void afterThrowing(SeRequest request, SeResponse response, Method method, Object[] args, Throwable throwable) {
-
+        throwable.printStackTrace();
     }
 
     @Override

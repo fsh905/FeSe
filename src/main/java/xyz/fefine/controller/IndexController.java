@@ -17,6 +17,7 @@ public class IndexController {
     public void index(SeResponse response) {
         try {
             response.getOutStream().write("<h2>this is index</h2>".getBytes());
+            response.flush();
         } catch (IOException e) {
             System.out.println("index show error");
             e.printStackTrace();
@@ -27,6 +28,7 @@ public class IndexController {
     public void pageShow(@RequestParam("num") int num, SeResponse response) {
         try {
             response.getOutStream().write(("<h2>this is page "+ num + "</h2>").getBytes());
+            response.flush();
         } catch (IOException e) {
             System.out.println("page show error");
             e.printStackTrace();

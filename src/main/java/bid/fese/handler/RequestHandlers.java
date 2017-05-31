@@ -97,8 +97,7 @@ public class RequestHandlers {
      * @return 动态资源分陪器， 全局共享
      */
     public static DispatcherHandler getDynamicDispatcherHandler() {
-        DispatcherHandler handler = null;
-        return handler;
+        return dynamicDispatcherHandler;
     }
 
     /**

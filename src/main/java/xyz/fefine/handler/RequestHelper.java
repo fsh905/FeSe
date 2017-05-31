@@ -14,6 +14,7 @@ import xyz.fefine.annotation.Path;
 import xyz.fefine.annotation.RequestParam;
 import xyz.fefine.entity.DefaultInterceptor;
 import xyz.fefine.entity.Interceptor;
+import xyz.fefine.entity.TYPE;
 import xyz.fefine.exception.NoHandlerFoundException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -26,10 +27,7 @@ import java.lang.reflect.Parameter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -38,15 +36,10 @@ import java.util.regex.Pattern;
  */
 public class RequestHelper {
 
-    private Logger LOG = LogManager.getLogger(this.getClass());
-
+    private static final Logger logger = LogManager.getLogger(RequestHelper.class);
     private RequestSearchTree<RequestHandler> handlers;
     //拦截器
     private Interceptor interceptor;
-
-
-//	private RequestHandler handler;
-
 
     public Interceptor getInterceptor() {
         return interceptor;
@@ -69,17 +62,17 @@ public class RequestHelper {
     public String getRealRequestMathod(SeRequest req) {
 
         if (req.getMethod() == SeRequest.METHOD.GET) {
-            LOG.info("request method is GET");
+            logger.info("request method is GET");
             return "get";
         }
 
         String method = req.getParameter("_method");
 
         if (method == null) {
-            LOG.info( "request method is POST");
+            logger.info("request method is POST");
             return "post";
         }
-        LOG.info( "request method is " + method);
+        logger.info("request method is " + method);
         //返回小写
         return method.toLowerCase();
     }
@@ -92,66 +85,53 @@ public class RequestHelper {
      */
     public RequestHandler findRequestHandler(String url) throws NoHandlerFoundException {
 
-        LOG.info( "request url is " + url.substring(0, url.lastIndexOf(".")));
+        logger.info("request url is " + url.substring(0, url.lastIndexOf(".")));
 
         //去除请求的后缀，要不然带后缀的请求找不到合适的handler
         //这里查找比较浪费时间
         url = url.substring(0, url.lastIndexOf("."));
-
         RequestHandler rh = handlers.find(url);
         if (rh == null)
             throw new NoHandlerFoundException();
+        logger.debug("get request handler:" + rh.getClassName());
         return rh;
     }
 
     /**
      * 初始化requestHandler
-     *
      * @param packagePath 包路径
-     * @return requestHandler
      */
     public void initRequestHandler(String packagePath) {
         Document doc = getDoc(packagePath);
-        //contentConfigLocation
         String[] packages = getPackageName(doc);
         this.interceptor = initInterceptor(doc);
 
         if (packages == null) {
-            LOG.error("package is null");
-//			return null;
+            logger.error("package is null");
+            return;
         }
-
         for (String pkName : packages) {
-
             scanPackage(pkName);
         }
-
     }
 
     /**
      * 生成Interceptor，当没有自定义时使用默认
-     *
-     * @param doc
-     * @return
      */
     private Interceptor initInterceptor(Document doc) {
 
         //获取根
         Element ele = doc.getDocumentElement();
-
         //要扫描的包名 packages/package
         NodeList nls = ele.getElementsByTagName("interceptor");
         if (nls.getLength() < 1) {
             return new DefaultInterceptor();
         } else {
-
-            org.w3c.dom.Node node = nls.item(0);
+            Node node = nls.item(0);
             NamedNodeMap nnm = node.getAttributes();
-
             String claName = nnm.getNamedItem("class").getNodeValue();
-
             try {
-                LOG.info("Scan Inteceptor class is "+claName);
+                logger.info("Scan Inteceptor class is " + claName);
                 return (Interceptor) Class.forName(claName).newInstance();
             } catch (InstantiationException e) {
                 e.printStackTrace();
@@ -160,19 +140,17 @@ public class RequestHelper {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-
-
         }
+        logger.info("use default interceptor");
         return new DefaultInterceptor();
     }
 
 
     /**
      * 获取扫描包的路径
-     * @param doc
-     * @return
+     * @return 包名
      */
-    private String[] getPackageName(Document doc){
+    private String[] getPackageName(Document doc) {
 
         //获取根
         Element ele = doc.getDocumentElement();
@@ -180,10 +158,10 @@ public class RequestHelper {
         //要扫描的包名 packages/package
         NodeList nls = ele.getElementsByTagName("packages");
         Node pks = null;
-        if(nls.getLength() < 1){
-            LOG.error("Not found scan packages");
+        if (nls.getLength() < 1) {
+            logger.error("Not found scan packages");
             return null;
-        }else{
+        } else {
             pks = nls.item(0);
         }
 
@@ -198,7 +176,7 @@ public class RequestHelper {
             scPkName[i] = no.getTextContent();
 
             //scanPackage(sacnPkName);
-            LOG.info("scanPackageName:"+no.getTextContent());
+            logger.info("scanPackageName:" + no.getTextContent());
 
         }
 
@@ -206,69 +184,54 @@ public class RequestHelper {
         return scPkName;
 
     }
+
     //获取解析好的doc
-    private Document getDoc(String packagePath){
-        // getpath
-        try {
-            try {
-                packagePath = this.getClass().getClassLoader().getResource("").toURI().getPath()+"//" + packagePath;
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-        }catch (NullPointerException e){
-
-            LOG.error("get the class loader error !");
-            e.printStackTrace();
-        }
-
-
+    private Document getDoc(String packagePath) {
         DocumentBuilderFactory fact = DocumentBuilderFactory.newInstance();
-
         DocumentBuilder build = null;
         try {
             build = fact.newDocumentBuilder();
         } catch (ParserConfigurationException e) {
             // TODO Auto-generated catch block
-            LOG.error("ParserConfigurationException");
+            logger.error("ParserConfigurationException");
             e.printStackTrace();
         }
-
-
         Document doc = null;
+        File file = null;
         try {
-            doc = build.parse(new File(packagePath));
-        } catch ( IOException | org.xml.sax.SAXException e) {
+            file = new File(packagePath);
+            doc = build.parse(file);
+        } catch (IOException | org.xml.sax.SAXException e) {
             // TODO Auto-generated catch block
-            LOG.error("open the package failed");
+            logger.error("open the package failed" + file.getAbsolutePath());
             e.printStackTrace();
         }
-
         return doc;
     }
 
     /**
      * 扫描包下面所有类
+     *
      * @param pkName pkName
      */
-    private void scanPackage(String pkName){
+    private void scanPackage(String pkName) {
         String path = pkName.replace(".", "/");
         URL url = Thread.currentThread().getContextClassLoader().getResource(path);
         try {
-            if(url!=null && url.toString().startsWith("file")){
-                String filePath = URLDecoder.decode(url.getFile(),"utf-8");
+            if (url != null && url.toString().startsWith("file")) {
+                String filePath = URLDecoder.decode(url.getFile(), "utf-8");
                 File dir = new File(filePath);
-                List<File> fileList = new ArrayList<File>();
-                fetchFileList(dir,fileList);
-                for(File f:fileList){
-                    String className =  f.getAbsolutePath();
-                    if(className.endsWith(".class")){
-                        String nosuffixFileName = className.substring(8+className.lastIndexOf("classes"),className.indexOf(".class"));
+                List<File> fileList = new ArrayList<>();
+                fetchFileList(dir, fileList);
+                for (File f : fileList) {
+                    String className = f.getAbsolutePath();
+                    if (className.endsWith(".class")) {
+                        String nosuffixFileName = className.substring(8 + className.lastIndexOf("classes"), className.indexOf(".class"));
                         className = nosuffixFileName.replaceAll("\\\\", ".");
                         // on unix this is /
-                        className = className.replaceAll("/",".");
+                        className = className.replaceAll("/", ".");
                     }
-//                    System.out.println("scan class name ："+className);
-                    LOG.info( "sacnClassName:"+className);
+                    logger.info("sacnClassName:" + className);
                     //扫描class
                     scanClass(className);
                 }
@@ -278,12 +241,12 @@ public class RequestHelper {
         }
     }
 
-    private static void  fetchFileList(File dir,List<File> fileList){
-        if(dir.isDirectory()){
-            for(File f:dir.listFiles()){
-                fetchFileList(f,fileList);
+    private static void fetchFileList(File dir, List<File> fileList) {
+        if (dir.isDirectory()) {
+            for (File f : dir.listFiles()) {
+                fetchFileList(f, fileList);
             }
-        }else{
+        } else {
             fileList.add(dir);
         }
     }
@@ -292,175 +255,139 @@ public class RequestHelper {
     /**
      * 扫描类中所有的方法及其注解
      * @param className 类名
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     * @throws ClassNotFoundException
      */
-    private void scanClass(String className) throws InstantiationException, IllegalAccessException, ClassNotFoundException{
-
-
-
+    private void scanClass(String className) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         Class<?> cla = Class.forName(className);
-
         String classAnnoName = "";
         //类是否有path注解
         Path path = cla.getAnnotation(Path.class);
-        if(path != null){
-
+        if (path != null) {
             classAnnoName += path.value();
-
         }
-
         //获取所有public方法,包含了继承Object的方法
         //warring 仅能获取public方法
         Method[] mes = cla.getMethods();
-
-        for(int i=0;i<mes.length;i++){
-
+        for (int i = 0; i < mes.length; i++) {
             Method m = mes[i];
-
-
             path = m.getAnnotation(Path.class);
-
             String methodName = m.getName();
-
             //继承的方法不带注解
-            if(path != null){
-
+            if (path != null) {
                 //每个带注解的method就是一个新的handler
                 RequestHandler handler = new RequestHandler();
-
                 handler.setClassName(className);
-
                 handler.setMethod(m);
                 //请求方式
                 handler.setRequestMethod(path.requestMethod());
-
                 handler.setMethodLocation(i);
-
-/*				handler.setParamsType(Type.getArgumentTypes(m));
-
-				handler.setReturnType(Type.getReturnType(m));*/
-
                 //注解值
                 String methodAnnoName = path.value();
                 //方法名
 //				String requestMethod = path.requestMethod();
                 //参数暂时不需要在这里读取，放进Map里面的需要有：urlPattern，url，className，MethodName
                 //在拦截器中进行方法的详细操作
-
                 //参数名
                 Parameter[] ps = m.getParameters();
 
-                Map<String,Integer> map = new HashMap<String,Integer>();
-
-                for(int ij = 0;ij<ps.length;ij++){
-
+                Map<String, Integer> indexMap = new HashMap<>();
+                Map<String, TYPE> typeMap = new Hashtable<>();
+                for (int ij = 0; ij < ps.length; ij++) {
                     Parameter p = ps[ij];
-
                     RequestParam rp = p.getAnnotation(RequestParam.class);
-
-                    if(rp != null){
-
+                    TYPE type = null;
+                    String paramName = null;
+                    if (rp != null) {
                         //参数的名称
-                        String paramName = rp.value();
-//						System.out.println("param:"+paramName);
-                        LOG.info( "param:"+paramName);
+                        paramName = rp.value();
+                        logger.info("param:" + paramName);
                         //参数，位置
-                        map.put(paramName, ij);
-
-                    }else {
-
-                        if(p.getType() == SeRequest.class)
-                            map.put("_request",ij);
-                        else if(p.getType() == SeResponse.class)
-                            map.put("_response",ij);
-
                     }
+
+                    if (p.getType() == SeRequest.class) {
+                        paramName = "_request";
+                        type = TYPE.STRING;
+                    } else if (p.getType() == SeResponse.class) {
+                        paramName = "_response";
+                        type = TYPE.STRING;
+                    } else if (p.getType() == Byte.TYPE) {
+                        type = TYPE.BYTE;
+                    } else if (p.getType() == Character.TYPE) {
+                        type = TYPE.CHAR;
+                    } else if (p.getType() == Short.TYPE) {
+                        type = TYPE.SHORT;
+                    } else if (p.getType() == Integer.TYPE) {
+                        type = TYPE.INT;
+                    } else if (p.getType() == Long.TYPE) {
+                        type = TYPE.LONG;
+                    } else if (p.getType() == Float.TYPE) {
+                        type = TYPE.FLOAT;
+                    } else if (p.getType() == Double.TYPE) {
+                        type = TYPE.DOUBLE;
+                    } else {
+                        type = TYPE.STRING;
+                    }
+                    indexMap.put(paramName, ij);
+                    typeMap.put(paramName, type);
                 }
-                //判断map中是否含有req,resp
-                if(!map.containsKey("_request"))
-                    map.put("_request",-1);
-                if(!map.containsKey("_response"))
-                    map.put("_response",-1);
+
                 //保存到list中
-                save(className, methodName, classAnnoName, methodAnnoName,map,handler);
-
+                save(className, methodName, classAnnoName, methodAnnoName, indexMap, typeMap, handler);
             }
-
         }
-
     }
 
     /**
      * 将url处理并放入搜索树
-     * @param className 类名
-     * @param methodName 方法名
-     * @param classAnnoName 类注解
+     * @param className      类名
+     * @param methodName     方法名
+     * @param classAnnoName  类注解
      * @param methodAnnoName 方法注解
-     * @param map 参数
-     * @param handler 处理器
+     * @param map            参数
+     * @param handler        处理器
      */
-    private void save(String className,String methodName,String classAnnoName,String methodAnnoName,Map<String,Integer> map,RequestHandler handler){
-
-        String url = classAnnoName+methodAnnoName;
+    private void save(String className, String methodName, String classAnnoName, String methodAnnoName, Map<String, Integer> map, Map<String, TYPE> typeMap, RequestHandler handler) {
+        String url = classAnnoName + methodAnnoName;
         //将url改造成正则的形式
         //main/{a}/{b} -> main/[^/]+/[^/]+$
-        String urlPattern = url.replaceAll("\\{[a-z0-9]+\\}", "[^/]+")+"$";
-
-        LOG.info( "scanUrl:"+url+"   scanUrlPattern:"+urlPattern);
-
+        String urlPattern = url.replaceAll("\\{[a-z0-9]+\\}", "[^/]+") + "$";
+        logger.info("scanUrl:" + url + "   scanUrlPattern:" + urlPattern);
         handler.setUrl(url);
         handler.setUrlPattern(Pattern.compile(urlPattern));
-
         //将map放入字符串中
-        String[] params = paramsLocation(url,map);
-
+        Object[][] params = paramsLocation(url, map, typeMap);
         //参数的部分信息
         handler.setParamsInfo(params);
-
         handlers.insert(handler);
     }
 
     /**
      * 将链接分解并拼接成包含信息的字符串,需要改进
+     *
      * @param url 访问链接
      * @param map 参数及其位置
-     * @return
      */
-    private String[] paramsLocation(String url ,Map<String,Integer> map){
-
+    private Object[][] paramsLocation(String url, Map<String, Integer> map, Map<String, TYPE> typeMap) {
         String[] sta = url.split("/");
-
         //存放参数,为了防止添加req和resp后溢出，因此+2
-        String[] res = new String[sta.length+2];
+        Object[][] res = new Object[sta.length + 2][3];
         int j = 0;
         for (int i = 0; i < sta.length; i++) {
-            if(sta[i].matches("\\{.+\\}")){
-                String t = "";
-                String k = sta[i].substring(1,sta[i].length()-1);
-                //第一个为参数名称，参数在源字符串中的位置，参数在方法的的参数中的位置
-                t += k + "}"+i + "}" + map.get(k);
-                res[j++] = t;
-                LOG.info( "params:"+t);
+            if (sta[i].matches("\\{.+\\}")) {
+                String k = sta[i].substring(1, sta[i].length() - 1);
+                //分别为　参数名称，参数在源字符串中的位置，参数在方法的的参数中的位置,参数的类型
+                res[j++] = new Object[]{k, i, map.get(k), typeMap.get(k)};
+                logger.debug("params:" + Arrays.toString(res[j - 1]));
             }
         }
         //放入req，resp
-        res[j++] = map.get("_request").toString();
-        res[j++] = map.get("_response").toString();
-
-        //sta为新字符串
-        sta = new String[j];
-        for (int i = 0; i < j; i++)
-            //将res中多余的去除
-            sta[i] = res[i];
+        // 名称，　位置
+        res[j++] = new Object[]{"_request", map.get("_request")};
+        res[j++] = new Object[]{"_response", map.get("_response")};
 
 
-        return sta;
-
+        Object[][] ns = new Object[j][];
+        System.arraycopy(res, 0, ns, 0, j);
+        return ns;
     }
-
-
-
 }
 
