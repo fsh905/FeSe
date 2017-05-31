@@ -51,32 +51,11 @@ public class Booter {
                     case Constants.CONFIG_SERVER_PORT :
                         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, Integer.parseInt(props.get(k)));
                         break;
-                    case Constants.CONFIG_STATIC_RESOURCE_PATH :
-                        ApplicationContext.put(Constants.CONFIG_STATIC_RESOURCE_PATH, props.get(k));
-                        break;
-                    case Constants.CONFIG_CONTROLLER_PATH :
-                        ApplicationContext.put(Constants.CONFIG_CONTROLLER_PATH, props.get(k));
-                        break;
-                    case Constants.CONFIG_DYNAMIC_REQUEST_HANDLER :
-                        ApplicationContext.put(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER, props.get(k));
-                        break;
                     case Constants.CONFIG_REQUEST_POSTFIX :
                         ApplicationContext.put(Constants.CONFIG_REQUEST_POSTFIX, props.get(k).toLowerCase().toCharArray());
                         break;
-                    case Constants.CONFIG_INDEX :
-                        ApplicationContext.put(Constants.CONFIG_INDEX, props.get(k));
-                        break;
-                    case Constants.CONFIG_REQUEST_HANDLER :
-                        ApplicationContext.put(Constants.CONFIG_REQUEST_HANDLER, props.get(k));
-                        break;
-                    case Constants.CONFIG_PAGE_404 :
-                        ApplicationContext.put(Constants.CONFIG_PAGE_404, props.get(k));
-                        break;
-                    case Constants.CONFIG_PAGE_500:
-                        ApplicationContext.put(Constants.CONFIG_PAGE_500, props.get(k));
-                        break;
                     default:
-                        logger.error("error config properties key:" + k);
+                        ApplicationContext.put(k, props.get(k));
                 }
             }
         }
