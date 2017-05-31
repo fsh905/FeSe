@@ -11,7 +11,6 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -35,7 +34,6 @@ public class SeResponse {
         this.socketChannel = request.getSocketChannel();
         SeHeader header = request.getHeader();
         this.cookies = header.getCookies();
-
         // 判断是否支持gzip
         if (header.getHeaderParameter(SeHeader.ACCEPT_ENCODING) != null) {
             isSupportGZIP = header.getHeaderParameter(SeHeader.ACCEPT_ENCODING).contains("gzip");

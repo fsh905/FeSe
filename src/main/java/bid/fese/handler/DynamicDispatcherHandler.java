@@ -1,6 +1,5 @@
 package bid.fese.handler;
 
-import bid.fese.entity.SeHeader;
 import bid.fese.entity.SeRequest;
 import bid.fese.entity.SeResponse;
 
@@ -13,6 +12,7 @@ public class DynamicDispatcherHandler implements DispatcherHandler {
     public void handlerRequest(SeRequest request, SeResponse response) {
         response.getPrintWriter().print("Dynamic request handler is not implement");
         response.getPrintWriter().flush();
+        response.getCookies().set("data", "hehe");
         response.flush();
     }
 }
