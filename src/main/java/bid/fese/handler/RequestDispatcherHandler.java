@@ -17,6 +17,11 @@ public class RequestDispatcherHandler implements DispatcherHandler {
     private static Logger logger = LogManager.getLogger(RequestDispatcherHandler.class);
 
     @Override
+    public void initHandler() {
+
+    }
+
+    @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
         if (isStatic(request.getUrl())) {
             logger.info(request.getRemoteAddress() + " ["+request.getMethod()+"] " + request.getUrl() + " [static]" + (request.isKeepAlive() ? "[keep-Alive]" : "[no-keep-alive]"));
