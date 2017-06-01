@@ -18,14 +18,15 @@ public class SeRequest {
         GET,
         HEAD,
         PATCH, POST, PUT,
-        TRACE}
+        TRACE
+    }
 
 //    private static final Logger log = LogManager.getLogger(SeRequest.class);
 
     private SeHeader header;
     private SeCookies cookies;
     private byte[] in;
-    private InputStream inputStream;
+    private InStream inputStream;
     private AsynchronousSocketChannel socketChannel;
     private boolean isKeepAlive;
     private String remoteAddress;
@@ -41,7 +42,9 @@ public class SeRequest {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        parsePostData();
     }
+
     public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
         this.in = null;
@@ -79,8 +82,36 @@ public class SeRequest {
         return header.getMethod();
     }
 
+    private void parsePostData() {
+        if (header.getHeaderParameter(SeHeader.CONTENT_TYPE) != null
+                && header.getHeaderParameter(SeHeader.CONTENT_TYPE).equals(SeHeader.X_WWW_FORM_URLENCODED)) {
+            // Content-Type: application/x-www-form-urlencoded
+            // 可以解析
+            if (in.length > 2) {
+                int index = 0;
+                int old = 0;
+                String key = null;
+                String value = null;
+                while (index < in.length) {
+                    old = index;
+                    while (index < in.length && in[index] != '&') {
+                        if (in[index] == '=') {
+                            key = new String(in, old, index - old);
+                            old = index + 1;
+                        }
+                        index++;
+                    }
+                    value = new String(in, old, index - old);
+                    header.addRequestParameter(key, value);
+                    index++;
+                }
+            }
+        }
+    }
+
     /**
      * 可以先获取header再调用
+     *
      * @param name 参数名
      * @return 值 或者 null
      */
@@ -121,6 +152,7 @@ public class SeRequest {
 
     /**
      * 通过socketChannel的hashCode来判断是否为同一个连接
+     *
      * @return hashCode
      */
     @Override
@@ -133,7 +165,7 @@ public class SeRequest {
         return obj.hashCode() == hashCode();
     }
 
-    private class InStream extends InputStream{
+    private class InStream extends InputStream {
 
         private byte[] in;
         private int nextChars;

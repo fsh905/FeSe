@@ -17,6 +17,7 @@ public class SeHeader {
     public static final String NOT_FOUND_404 = "HTTP/1.1 404 Not Found";
     public static final String SERVER_ERROR_500 = "HTTP/1.1 500 Internal Server Error";
     public static final String CONTENT_TYPE = "Content-Type";
+    public static final String X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String CONNECTION = "Connection";
     public static final String CONNECTION_CLOSE = "close";
     public static final String CONTENT_LENGTH = "Content-Length";
