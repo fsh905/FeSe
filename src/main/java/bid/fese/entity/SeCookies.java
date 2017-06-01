@@ -17,6 +17,9 @@ public class SeCookies {
         cookies = new HashMap<>();
         parse();
     }
+    public SeCookies() {
+        cookies = new HashMap<>();
+    }
 
     /**
      * 添加的时候进行解析
