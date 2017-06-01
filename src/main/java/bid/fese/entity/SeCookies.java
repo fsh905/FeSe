@@ -28,7 +28,6 @@ public class SeCookies {
         if (str == null) {
             return;
         }
-        System.out.println("cookie:" + str);
         String[] kvs = str.split("; ");
         for (String kv : kvs) {
             String[] ks = kv.split("=");

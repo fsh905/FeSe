@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.InterruptedByTimeoutException;
 
 /**
  * Created by feng_ on 2016/12/8.
@@ -32,21 +33,23 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
 
-        if (readBytesLen < 0) {
-            if (socketChannel.isOpen()) {
+        if (readBytesLen <= 0) {
+            if (readBytesLen == 0) {
+                log.error("read byte len is 0, continue read");
                 attachment.clear();
-                socketChannel.read(attachment,
-                        Constants.DEFAULT_KEEP_ALIVE_TIME,
-                        Constants.DEFAULT_KEEP_ALIVE_TIME_UNIT,
-                        attachment, this);
+                keepAlive(attachment);
             } else {
-                try {
-                    socketChannel.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                log.error("read byte len is -1, attempt to close socket");
+                if (socketChannel.isOpen()) {
+                    try {
+                        socketChannel.close();
+                        log.info("close socket" + socketAddress);
+                    } catch (IOException e) {
+                        log.error("close socket failed, address:" + socketAddress);
+                    }
                 }
+                return;
             }
-            return;
         }
 
         byte[] bytes = new byte[readBytesLen];
@@ -80,12 +83,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
         // 当协议为http/1.1时， 默认为keep-alive直到收到connection: close或者超时自动关闭
         boolean isKeepAlive = true;
         if (header.getProtocol().equals(SeHeader.PROTOCOL_1_0)) {
-            if (header.getHeaderParameter(SeHeader.CONNECTION) == null || header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
+            if (header.getHeaderParameter(SeHeader.CONNECTION) == null
+                    || header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
                 log.debug("keep-alive not set");
                 isKeepAlive = false;
             }
         } else {
-            if (header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
+            if (header.getHeaderParameter(SeHeader.CONNECTION) != null
+                    && header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
                 log.debug("keep-alive not set");
                 isKeepAlive = false;
             }
@@ -174,11 +179,16 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
+        if (exc instanceof InterruptedByTimeoutException) {
+            log.info("timeout error! close socket:" + socketAddress);
+            return;
+        }
         // when read is fail
         log.error("read error! close socket:" + socketAddress, exc);
         if (socketChannel.isOpen()) {
             try {
                 socketChannel.close();
+                log.error("close socket success");
             } catch (IOException e) {
                 log.error("close socket error" + socketAddress, e);
             }
@@ -273,7 +283,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             while (bytes[headParseIndex] != '\r') headParseIndex ++;
 
             header.setProtocol(new String(bytes,lastPosi,headParseIndex-lastPosi));
-//            log.debug("protocol:"+header.getProtocol());
+            log.debug("protocol:"+header.getProtocol());
             return headParseIndex + 2;
 
         }

@@ -93,8 +93,8 @@ public class RequestHandlers {
     }
 
     /**
-     * 动态资源分配， 目前只能实现全局单例
-     * @return 动态资源分陪器， 全局共享
+     * 线程动态资源分配
+     * @return 动态资源分陪器， 线程独享
      */
     public static DispatcherHandler getDynamicDispatcherHandler() {
         return dynamicDispatcherHandler;
