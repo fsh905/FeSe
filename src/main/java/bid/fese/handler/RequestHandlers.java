@@ -63,7 +63,7 @@ public class RequestHandlers {
      * 线程动态资源分配
      * @return 动态资源分陪器， 线程独享
      */
-    public static DispatcherHandler getDynamicDispathcerHandler() {
+    public static DispatcherHandler getDynamicDispatcherHandler() {
         DispatcherHandler handler = dynamicDispatcherHandlerThreadLocal.get();
         if (handler == null) {
             // todo 这里可以进行配置处理器

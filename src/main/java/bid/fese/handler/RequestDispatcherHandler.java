@@ -25,7 +25,7 @@ public class RequestDispatcherHandler implements DispatcherHandler {
         } else {
             logger.info(request.getRemoteAddress() + " ["+request.getMethod()+"] " + request.getUrl() + " [dynamic]" + (request.isKeepAlive() ? "[keep-Alive]" : "[no-keep-alive]"));
             logger.debug(request.getUrl() + " is assign to dynamic:" + System.currentTimeMillis());
-            RequestHandlers.getDynamicDispathcerHandler().handlerRequest(request, response);
+            RequestHandlers.getDynamicDispatcherHandler().handlerRequest(request, response);
         }
     }
 
