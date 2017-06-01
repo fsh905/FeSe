@@ -1,8 +1,5 @@
 package bid.fese.exception;
 
-import java.io.PrintWriter;
-import java.util.logging.Logger;
-
 /**
  * Created by Feng on 17/01/26.
  */

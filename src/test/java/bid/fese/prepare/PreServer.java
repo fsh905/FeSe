@@ -3,7 +3,6 @@ package bid.fese.prepare;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.net.SocketOptions;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;

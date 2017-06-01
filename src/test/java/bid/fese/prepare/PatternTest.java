@@ -3,7 +3,6 @@ package bid.fese.prepare;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.regex.Pattern;
 
 /**
  * Created by feng_sh on 17-5-25.

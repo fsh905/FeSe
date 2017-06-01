@@ -6,8 +6,8 @@ import bid.fese.entity.SeRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
-import java.util.zip.DeflaterInputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by feng_sh on 5/23/2017.
