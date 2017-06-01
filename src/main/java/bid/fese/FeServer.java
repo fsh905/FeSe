@@ -41,7 +41,6 @@ public class FeServer implements Runnable{
                     try {
                         logger.info("-------------------------------------------------------------");
                         logger.info("a new connection establish;" + socketChannel.getRemoteAddress());
-                        logger.info("connection start time:" + System.currentTimeMillis());
                     } catch (IOException e) {
                         logger.error("get connection info error;", e);
                         e.printStackTrace();

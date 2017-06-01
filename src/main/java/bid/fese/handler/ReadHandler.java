@@ -33,17 +33,23 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     @Override
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
 
-        if (readBytesLen < 0) {
-            log.error("read byte len is 0, attempt to close socket");
-            if (socketChannel.isOpen()) {
-                try {
-                    socketChannel.close();
-                    log.info("close socket" + socketAddress);
-                } catch (IOException e) {
-                    log.error("close socket failed, address:" + socketAddress);
+        if (readBytesLen <= 0) {
+            if (readBytesLen == 0) {
+                log.error("read byte len is 0, continue read");
+                attachment.clear();
+                keepAlive(attachment);
+            } else {
+                log.error("read byte len is -1, attempt to close socket");
+                if (socketChannel.isOpen()) {
+                    try {
+                        socketChannel.close();
+                        log.info("close socket" + socketAddress);
+                    } catch (IOException e) {
+                        log.error("close socket failed, address:" + socketAddress);
+                    }
                 }
+                return;
             }
-            return;
         }
 
         byte[] bytes = new byte[readBytesLen];
@@ -77,12 +83,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
         // 当协议为http/1.1时， 默认为keep-alive直到收到connection: close或者超时自动关闭
         boolean isKeepAlive = true;
         if (header.getProtocol().equals(SeHeader.PROTOCOL_1_0)) {
-            if (header.getHeaderParameter(SeHeader.CONNECTION) == null || header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
+            if (header.getHeaderParameter(SeHeader.CONNECTION) == null
+                    || header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
                 log.debug("keep-alive not set");
                 isKeepAlive = false;
             }
         } else {
-            if (header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
+            if (header.getHeaderParameter(SeHeader.CONNECTION) != null
+                    && header.getHeaderParameter(SeHeader.CONNECTION).equals(SeHeader.CONNECTION_CLOSE)) {
                 log.debug("keep-alive not set");
                 isKeepAlive = false;
             }

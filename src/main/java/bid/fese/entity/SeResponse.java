@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -29,6 +30,7 @@ public class SeResponse {
 //    private byte[] contents;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
+    private String remoteAddress;
 
     public SeResponse(SeRequest request) {
         this.socketChannel = request.getSocketChannel();
@@ -42,6 +44,8 @@ public class SeResponse {
         this.header.setCookies(this.cookies);
         this.header.setStatus(SeHeader.OK_200);
         this.header.addHeaderParameter(SeHeader.SERVER, "FeSe");
+        this.outStream = new OutStream();
+        this.remoteAddress = request.getRemoteAddress();
 
         if (request.isKeepAlive()) {
             this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.KEEP_ALIVE);
@@ -74,7 +78,7 @@ public class SeResponse {
         // 但是如果静态文件类型是图片或者视频时应该返回404请求而不是页面
         logger.debug("write file:" + file.getAbsolutePath());
         if (!file.exists()) {
-            logger.error("not found:" + file.getAbsolutePath());
+            logger.error("not found:" + file.getAbsolutePath() + " -" + remoteAddress);
             if (isShowPage)
                 _404_notFoundPage();
             else
@@ -89,7 +93,7 @@ public class SeResponse {
                 if (isSupportGZIP) {
                     header.addHeaderParameter(SeHeader.CONTENT_ENCODING, SeHeader.GZIP);
                     logger.debug("use gzip");
-                    goz = new GZIPOutputStream(getOutStream());
+                    goz = new GZIPOutputStream(outStream);
                     int l = 0;
                     byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
                     while ((l = fis.read(bytes)) != -1) {
@@ -101,7 +105,7 @@ public class SeResponse {
                     byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
                     int len = 0;
                     while ((len = fis.read(bytes)) != -1) {
-                        getOutStream().write(bytes, 0, len);
+                        outStream.write(bytes, 0, len);
                     }
                 }
                 String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
@@ -109,13 +113,13 @@ public class SeResponse {
                     header.addHeaderParameter(SeHeader.CONTENT_TYPE, fileType);
                 }
             } catch (FileNotFoundException e) {
-                logger.error("file not found; path:" + file.getAbsolutePath(), e);
+                logger.error("file not found; path:" + file.getAbsolutePath() + " -" + remoteAddress, e);
                 if (isShowPage)
                     _404_notFoundPage();
                 else
                     _404_notFound();
             } catch (IOException e) {
-                logger.error("read error; path:" + file.getAbsolutePath(), e);
+                logger.error("read error; path:" + file.getAbsolutePath() + " -" + remoteAddress, e);
                 if (isShowPage)
                     _500_Server_Error_Page();
                 else
@@ -125,7 +129,7 @@ public class SeResponse {
                     try {
                         fis.close();
                     } catch (IOException e) {
-                        logger.error("close fis error; path:" + file.getAbsolutePath(), e);
+                        logger.error("close fis error; path:" + file.getAbsolutePath()  + " -" + remoteAddress, e);
                         if (isShowPage)
                             _500_Server_Error_Page();
                         else
@@ -136,7 +140,7 @@ public class SeResponse {
                     try {
                         goz.close();
                     } catch (IOException e) {
-                        logger.error("close giz error: path:" + file.getAbsolutePath(), e);
+                        logger.error("close giz error: path:" + file.getAbsolutePath() + " -" + remoteAddress, e);
                         if (isShowPage)
                             _500_Server_Error_Page();
                         else
@@ -147,18 +151,15 @@ public class SeResponse {
         }
     }
 
-
     private void _404_notFoundPage() {
         writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
             + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
     }
 
-
     private void _500_Server_Error_Page() {
         writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
                 + ApplicationContext.get(Constants.CONFIG_PAGE_500).toString()), false);
     }
-
 
     private void _404_notFound() {
         this.header.setStatus(SeHeader.NOT_FOUND_404);
@@ -177,7 +178,6 @@ public class SeResponse {
      */
     public void flush() {
         logger.debug("flush start");
-
         // 统一使用outStream接口
         header.setContentLength(outStream.nextBytes);
         byte[] headerBytes = header.toString().getBytes();
@@ -186,11 +186,9 @@ public class SeResponse {
         byteBuffer.put(headerBytes, 0 , headerBytes.length);
         byteBuffer.put(outs, 0, outStream.nextBytes);
         byteBuffer.flip();
-
         logger.debug("response header:\n" + header.toString());
-        logger.info("start send response:" + System.currentTimeMillis());
+        logger.debug("start send response");
         socketChannel.write(byteBuffer, socketChannel, new WriteHandler());
-
     }
 
     public OutputStream getOutStream() {
@@ -231,29 +229,27 @@ public class SeResponse {
     private class WriteHandler implements CompletionHandler<Integer, AsynchronousSocketChannel> {
         @Override
         public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-            try {
-                logger.info("write success! and address is:" + socketChannel.getRemoteAddress());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
+            logger.info("response success: -" + remoteAddress);
                 // 如果设置keepAlive
                 if (socketChannel.isOpen() && !SeResponse.this.isKeepAlive) {
-                    logger.debug("connection close time:" + System.currentTimeMillis());
-                    logger.debug("close socket" + socketChannel.getRemoteAddress());
-                    socketChannel.close();
+                    logger.debug("close socket" + remoteAddress);
+                    try {
+                        socketChannel.close();
+                    } catch (IOException e) {
+                        logger.error("close response error -" + remoteAddress);
+                    }
                 } else {
-                    logger.debug("alreadey set keep-alive, this socket not need close");
+                    logger.debug("already set keep-alive, this socket not need close");
                 }
-            } catch (IOException e) {
-                logger.error("close error");
-            }
         }
-
 
         @Override
         public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-            logger.error("write error", attachment, exc);
+            if (exc instanceof ClosedChannelException) {
+                logger.error("socket already closed -" + remoteAddress);
+                return;
+            }
+            logger.error("response error -" + remoteAddress, attachment, exc);
         }
     }
 }
