@@ -32,27 +32,23 @@ public class SeResponse {
 
     public SeResponse(SeRequest request) {
         this.socketChannel = request.getSocketChannel();
-        SeHeader header = request.getHeader();
-        this.cookies = header.getCookies();
         // 判断是否支持gzip
-        if (header.getHeaderParameter(SeHeader.ACCEPT_ENCODING) != null) {
-            isSupportGZIP = header.getHeaderParameter(SeHeader.ACCEPT_ENCODING).contains("gzip");
+        if (request.getHeader().getHeaderParameter(SeHeader.ACCEPT_ENCODING) != null) {
+            isSupportGZIP = request.getHeader().getHeaderParameter(SeHeader.ACCEPT_ENCODING).contains("gzip");
         }
-
-        // 清除header中的请求参数等
-        header.clear();
-        this.header = header;
+        // new header new cookie
+        this.header = new SeHeader();
+        this.cookies = new SeCookies();
+        this.header.setCookies(this.cookies);
         this.header.setStatus(SeHeader.OK_200);
         this.header.addHeaderParameter(SeHeader.SERVER, "FeSe");
+
         if (request.isKeepAlive()) {
             this.header.addHeaderParameter(SeHeader.CONNECTION, SeHeader.KEEP_ALIVE);
             isKeepAlive = true;
         } else {
             isKeepAlive = false;
         }
-
-
-
     }
 
     public SeCookies getCookies() {
