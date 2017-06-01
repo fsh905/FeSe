@@ -23,6 +23,10 @@ public class Booter {
     private static final Logger logger = LogManager.getLogger(Booter.class);
 
     public static void main(String[] args) {
+        boot();
+    }
+
+    public static void boot() {
         Booter booter = new Booter();
         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, 8080);
         booter.init();
