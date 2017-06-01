@@ -113,6 +113,12 @@
             <version>RELEASE</version>
             <scope>test</scope>
         </dependency>
+        <!-- obj2json -->
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.13</version>
+        </dependency>
         <!--log4j-->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

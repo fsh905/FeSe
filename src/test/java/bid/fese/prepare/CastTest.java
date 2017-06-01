@@ -18,7 +18,9 @@ public class CastTest {
         Class<?> cs = Class.forName("bid.fese.prepare.CastTest");
         Method[] ms = cs.getDeclaredMethods();
         for (Method m : ms) {
+            System.out.println("----");
             System.out.println(m.getName());
+            System.out.println(m.getReturnType() == Void.TYPE);
             Parameter[] ps = m.getParameters();
             for (Parameter p : ps) {
                 System.out.println(p.getType() == Integer.TYPE);

@@ -10,6 +10,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
+import xyz.fefine.annotation.JsonData;
 import xyz.fefine.annotation.Path;
 import xyz.fefine.annotation.RequestParam;
 import xyz.fefine.entity.DefaultInterceptor;
@@ -192,7 +193,6 @@ public class RequestHelper {
         try {
             build = fact.newDocumentBuilder();
         } catch (ParserConfigurationException e) {
-            // TODO Auto-generated catch block
             logger.error("ParserConfigurationException");
             e.printStackTrace();
         }
@@ -202,7 +202,6 @@ public class RequestHelper {
             file = new File(packagePath);
             doc = build.parse(file);
         } catch (IOException | org.xml.sax.SAXException e) {
-            // TODO Auto-generated catch block
             logger.error("open the package failed" + file.getAbsolutePath());
             e.printStackTrace();
         }
@@ -231,7 +230,7 @@ public class RequestHelper {
                         // on unix this is /
                         className = className.replaceAll("/", ".");
                     }
-                    logger.info("sacnClassName:" + className);
+                    logger.info("scanClassName:" + className);
                     //扫描class
                     scanClass(className);
                 }
@@ -243,8 +242,11 @@ public class RequestHelper {
 
     private static void fetchFileList(File dir, List<File> fileList) {
         if (dir.isDirectory()) {
-            for (File f : dir.listFiles()) {
-                fetchFileList(f, fileList);
+            File[] fs = dir.listFiles();
+            if (fs != null) {
+                for (File f : fs) {
+                    fetchFileList(f, fileList);
+                }
             }
         } else {
             fileList.add(dir);
@@ -264,11 +266,9 @@ public class RequestHelper {
         if (path != null) {
             classAnnoName += path.value();
         }
-        //获取所有public方法,包含了继承Object的方法
-        //warring 仅能获取public方法
-        Method[] mes = cla.getMethods();
-        for (int i = 0; i < mes.length; i++) {
-            Method m = mes[i];
+        //获取所有public方法
+        Method[] mes = cla.getDeclaredMethods();
+        for (Method m : mes) {
             path = m.getAnnotation(Path.class);
             String methodName = m.getName();
             //继承的方法不带注解
@@ -277,19 +277,23 @@ public class RequestHelper {
                 RequestHandler handler = new RequestHandler();
                 handler.setClassName(className);
                 handler.setMethod(m);
+                JsonData jd = m.getAnnotation(JsonData.class);
+                if (jd != null) {
+                    // 返回值需要进行json转化
+                    if (m.getReturnType() == Void.TYPE) {
+                        throw new RuntimeException("the method return object can't be cast to json");
+                    }
+                    handler.setToJson(true);
+                }
                 //请求方式
                 handler.setRequestMethod(path.requestMethod());
-                handler.setMethodLocation(i);
                 //注解值
                 String methodAnnoName = path.value();
-                //方法名
-//				String requestMethod = path.requestMethod();
-                //参数暂时不需要在这里读取，放进Map里面的需要有：urlPattern，url，className，MethodName
-                //在拦截器中进行方法的详细操作
-                //参数名
+                //参数
                 Parameter[] ps = m.getParameters();
-
+                //参数，位置
                 Map<String, Integer> indexMap = new HashMap<>();
+                //参数，类型
                 Map<String, TYPE> typeMap = new Hashtable<>();
                 for (int ij = 0; ij < ps.length; ij++) {
                     Parameter p = ps[ij];
@@ -300,7 +304,6 @@ public class RequestHelper {
                         //参数的名称
                         paramName = rp.value();
                         logger.info("param:" + paramName);
-                        //参数，位置
                     }
 
                     if (p.getType() == SeRequest.class) {

@@ -1,9 +1,11 @@
 package xyz.fefine.handler;
 
+import bid.fese.entity.SeHeader;
 import bid.fese.entity.SeRequest;
 import bid.fese.entity.SeResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 import xyz.fefine.entity.Interceptor;
 import xyz.fefine.entity.MethodInterceptor;
 import xyz.fefine.entity.TYPE;
@@ -24,7 +26,7 @@ import java.util.regex.Pattern;
 public class RequestHandler implements Comparable {
 
     private static final Logger logger = LogManager.getLogger(RequestHandler.class);
-
+    private static final ObjectMapper om = new ObjectMapper();
     /**
      * 原url信息
      */
@@ -54,29 +56,14 @@ public class RequestHandler implements Comparable {
      */
     private Method method;
 
-    /**
-     * 方法所在的位置
-     */
-    private int methodLocation;
+    // 是否将返回值转化为json， 并传递给response
+    private boolean toJson = false;
 
     /**
      * 请求方式
      */
     private String requestMethod;
 
-    /**
-     * request和response的存放位置
-     */
-    private Map<String, Integer> reqAndRespLocaltion;
-
-
-    public Map<String, Integer> getReqAndRespLocaltion() {
-        return reqAndRespLocaltion;
-    }
-
-    public void setReqAndRespLocaltion(Map<String, Integer> reqAndRespLocaltion) {
-        this.reqAndRespLocaltion = reqAndRespLocaltion;
-    }
 
     public String getUrl() {
         return url;
@@ -137,26 +124,21 @@ public class RequestHandler implements Comparable {
         this.method = method;
     }
 
-
-    public int getMethodLocation() {
-        return methodLocation;
-    }
-
-
-    public void setMethodLocation(int methodLocation) {
-        this.methodLocation = methodLocation;
-    }
-
-
     public String getRequestMethod() {
         return requestMethod;
     }
-
 
     public void setRequestMethod(String requestMethod) {
         this.requestMethod = requestMethod;
     }
 
+    public boolean isToJson() {
+        return toJson;
+    }
+
+    public void setToJson(boolean toJson) {
+        this.toJson = toJson;
+    }
 
     /**
      * 是否符合
@@ -183,7 +165,15 @@ public class RequestHandler implements Comparable {
         if (proxy != null) {
             try {
                 // todo 这里对返回值进行判断
-                proxy.invokeMethod();
+                Object res = proxy.invokeMethod();
+                if (this.isToJson()) {
+                    // 将json数据进行传输
+                    String json = om.writeValueAsString(res);
+                    resp.getPrintWriter().write(json);
+                    resp.getPrintWriter().flush();
+                    resp.getHeader().setContentType("application/json");
+                    resp.flush();
+                }
             } catch (Throwable e) {
                 e.printStackTrace();
             }
