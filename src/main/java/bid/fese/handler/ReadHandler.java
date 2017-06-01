@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.InterruptedByTimeoutException;
 
 /**
  * Created by feng_ on 2016/12/8.
@@ -33,17 +34,13 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
     public void completed(Integer readBytesLen, ByteBuffer attachment) {
 
         if (readBytesLen < 0) {
+            log.error("read byte len is 0, attempt to close socket");
             if (socketChannel.isOpen()) {
-                attachment.clear();
-                socketChannel.read(attachment,
-                        Constants.DEFAULT_KEEP_ALIVE_TIME,
-                        Constants.DEFAULT_KEEP_ALIVE_TIME_UNIT,
-                        attachment, this);
-            } else {
                 try {
                     socketChannel.close();
+                    log.info("close socket" + socketAddress);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("close socket failed, address:" + socketAddress);
                 }
             }
             return;
@@ -174,11 +171,16 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
+        if (exc instanceof InterruptedByTimeoutException) {
+            log.info("timeout error! close socket:" + socketAddress);
+            return;
+        }
         // when read is fail
         log.error("read error! close socket:" + socketAddress, exc);
         if (socketChannel.isOpen()) {
             try {
                 socketChannel.close();
+                log.error("close socket success");
             } catch (IOException e) {
                 log.error("close socket error" + socketAddress, e);
             }
@@ -273,7 +275,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             while (bytes[headParseIndex] != '\r') headParseIndex ++;
 
             header.setProtocol(new String(bytes,lastPosi,headParseIndex-lastPosi));
-//            log.debug("protocol:"+header.getProtocol());
+            log.debug("protocol:"+header.getProtocol());
             return headParseIndex + 2;
 
         }

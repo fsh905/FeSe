@@ -101,7 +101,7 @@ public class SeResponse {
                     byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
                     int len = 0;
                     while ((len = fis.read(bytes)) != -1) {
-                        outStream.write(bytes, 0, len);
+                        getOutStream().write(bytes, 0, len);
                     }
                 }
                 String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
