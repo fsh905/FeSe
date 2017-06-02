@@ -2,6 +2,8 @@ package bid.fese.entity;
 
 import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
+import bid.fese.common.FileUtil;
+import bid.fese.handler.RequestHandlers;
 import bid.fese.handler.WriteHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,7 +30,7 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private PrintWriter printWriter;
-    //    private byte[] contents;
+
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
     private String remoteAddress;
@@ -42,6 +44,7 @@ public class SeResponse {
         // new header new cookie
         this.header = new SeHeader();
         this.cookies = new SeCookies();
+        this.header.setUrl(request.getUrl());
         this.header.setCookies(this.cookies);
         this.header.setStatus(SeHeader.OK_200);
         this.header.addHeaderParameter(SeHeader.SERVER, "FeSe");
@@ -88,69 +91,39 @@ public class SeResponse {
             else
                 _404_notFound();
         } else {
-            // 文件存在
-            FileInputStream fis = null;
-            GZIPOutputStream goz = null;
-            try {
-                fis = new FileInputStream(file);
-                // 这里采用gzip
+            // 检查缓存
+            String url = header.getUrl();
+            if (isSupportGZIP) {
+                url += "GZIP";
+            }
+            byte[] body = RequestHandlers.getCache().get(url);
+            if (body == null) {
+                logger.debug("not cache " + url);
+                try {
+                    body = FileUtil.file2ByteArray(file, isSupportGZIP);
+                    RequestHandlers.getCache().put(url, body);
+                    String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
+                    if (fileType != null) {
+                        header.addHeaderParameter(SeHeader.CONTENT_TYPE, fileType);
+                    }
+                } catch (IOException e) {
+                    logger.error("write file occur error", e);
+                    if (isShowPage) {
+                        _500_Server_Error_Page();
+                    } else {
+                        _500_Server_Error();
+                    }
+                }
+            }
+            if (body != null) {
                 if (isSupportGZIP) {
                     header.addHeaderParameter(SeHeader.CONTENT_ENCODING, SeHeader.GZIP);
                     logger.debug("use gzip");
-                    goz = new GZIPOutputStream(outStream);
-                    int l = 0;
-                    byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
-                    while ((l = fis.read(bytes)) != -1) {
-                        goz.write(bytes, 0, l);
-                    }
-                    goz.flush();
-                } else {
-                    logger.debug("not use gzip");
-                    byte[] bytes = new byte[Constants.DEFAULT_UPLOAD_SIZE];
-                    int len = 0;
-                    while ((len = fis.read(bytes)) != -1) {
-                        outStream.write(bytes, 0, len);
-                    }
                 }
-                String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
-                if (fileType != null) {
-                    header.addHeaderParameter(SeHeader.CONTENT_TYPE, fileType);
-                }
-            } catch (FileNotFoundException e) {
-                logger.error("file not found; path:" + file.getAbsolutePath() + " -" + remoteAddress, e);
-                if (isShowPage)
-                    _404_notFoundPage();
-                else
-                    _404_notFound();
-            } catch (IOException e) {
-                logger.error("read error; path:" + file.getAbsolutePath() + " -" + remoteAddress, e);
-                if (isShowPage)
-                    _500_Server_Error_Page();
-                else
-                    _500_Server_Error();
-            } finally {
-                if (fis != null) {
-                    try {
-                        fis.close();
-                    } catch (IOException e) {
-                        logger.error("close fis error; path:" + file.getAbsolutePath()  + " -" + remoteAddress, e);
-                        if (isShowPage)
-                            _500_Server_Error_Page();
-                        else
-                            _500_Server_Error();
-                    }
-                }
-                if (goz != null) {
-                    try {
-                        goz.close();
-                    } catch (IOException e) {
-                        logger.error("close giz error: path:" + file.getAbsolutePath() + " -" + remoteAddress, e);
-                        if (isShowPage)
-                            _500_Server_Error_Page();
-                        else
-                            _500_Server_Error();
-                    }
-                }
+                outStream.bytes = body;
+                outStream.nextBytes = body.length;
+            } else {
+                _404_notFound();
             }
         }
     }
@@ -181,12 +154,9 @@ public class SeResponse {
      * 主要功能是发送, 必须执行flush才能发送
      */
     public void flush() {
-        logger.debug("flush start");
-        // 统一使用outStream接口
         header.setContentLength(outStream.nextBytes);
         byte[] headerBytes = header.toString().getBytes();
         logger.debug("response header:\n" + header.toString());
-        logger.debug("start send response header");
         new WriteHandler(socketChannel, this, remoteAddress)
                 .sendResponse(headerBytes, outStream.bytes, outStream.nextBytes);
     }
@@ -225,6 +195,4 @@ public class SeResponse {
             bytes[nextBytes++] = (byte) b;
         }
     }
-
-
 }
