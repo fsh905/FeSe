@@ -2,6 +2,7 @@ package bid.fese.entity;
 
 import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
+import bid.fese.handler.WriteHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,7 +28,7 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private PrintWriter printWriter;
-//    private byte[] contents;
+    //    private byte[] contents;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
     private String remoteAddress;
@@ -64,12 +65,15 @@ public class SeResponse {
     }
 
 
+    public boolean isKeepAlive() {
+        return isKeepAlive;
+    }
+
     public void writeFile(String filePath) {
         writeFile(new File(filePath));
     }
 
     public void writeFile(File file) {
-        // todo 判断文件类型， 然后选择相应的错误请求
         writeFile(file, true);
     }
 
@@ -181,14 +185,10 @@ public class SeResponse {
         // 统一使用outStream接口
         header.setContentLength(outStream.nextBytes);
         byte[] headerBytes = header.toString().getBytes();
-        byte[] outs = outStream.bytes;
-        ByteBuffer byteBuffer = ByteBuffer.allocate(headerBytes.length + outStream.nextBytes);
-        byteBuffer.put(headerBytes, 0 , headerBytes.length);
-        byteBuffer.put(outs, 0, outStream.nextBytes);
-        byteBuffer.flip();
         logger.debug("response header:\n" + header.toString());
-        logger.debug("start send response");
-        socketChannel.write(byteBuffer, socketChannel, new WriteHandler());
+        logger.debug("start send response header");
+        new WriteHandler(socketChannel, this, remoteAddress)
+                .sendResponse(headerBytes, outStream.bytes, outStream.nextBytes);
     }
 
     public OutputStream getOutStream() {
@@ -226,30 +226,5 @@ public class SeResponse {
         }
     }
 
-    private class WriteHandler implements CompletionHandler<Integer, AsynchronousSocketChannel> {
-        @Override
-        public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-            logger.info("response success: -" + remoteAddress);
-                // 如果设置keepAlive
-                if (socketChannel.isOpen() && !SeResponse.this.isKeepAlive) {
-                    logger.debug("close socket" + remoteAddress);
-                    try {
-                        socketChannel.close();
-                    } catch (IOException e) {
-                        logger.error("close response error -" + remoteAddress);
-                    }
-                } else {
-                    logger.debug("already set keep-alive, this socket not need close");
-                }
-        }
 
-        @Override
-        public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-            if (exc instanceof ClosedChannelException) {
-                logger.error("socket already closed -" + remoteAddress);
-                return;
-            }
-            logger.error("response error -" + remoteAddress, attachment, exc);
-        }
-    }
 }
