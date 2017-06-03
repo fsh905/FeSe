@@ -4,6 +4,7 @@ import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
 import bid.fese.entity.SeRequest;
 import bid.fese.entity.StaticSoftCache;
+import bid.fese.entity.StaticSoftCacheBytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +32,8 @@ public class RequestHandlers {
 
     private static DispatcherHandler dynamicDispatcherHandler;
 
-    private static StaticSoftCache cache = new StaticSoftCache();
+//    private static ThreadLocal<StaticSoftCache> cacheThreadLocal = new ThreadLocal<>();
+    private static ThreadLocal<StaticSoftCacheBytes> cacheThreadLocal = new ThreadLocal<>();
 
     private RequestHandlers() {}
 
@@ -94,7 +96,17 @@ public class RequestHandlers {
         return handler;
     }
 
-    public static StaticSoftCache getCache() {
+    /**
+     * 这里的cache使用threadLocal， 防止冲突
+     * todo 需要重新测试缓存机制的使用方式
+     * @return 缓存器
+     */
+    public static StaticSoftCacheBytes getCache() {
+        StaticSoftCacheBytes cache = cacheThreadLocal.get();
+        if (cache == null) {
+            cache = new StaticSoftCacheBytes();
+            cacheThreadLocal.set(cache);
+        }
         return cache;
     }
 

@@ -90,7 +90,7 @@ public class WriteHandler {
         }
         @Override
         public void completed(Integer result, Integer nowReadLen) {
-            logger.debug("write len:" + result + " all write len:" + (result + nowReadLen) + " data len:" + byteBuffer.limit());
+            logger.debug("write len:" + result + " all write len:" + (result + nowReadLen) + " data len:" + byteBuffer.limit() + " -" + remoteAddress);
             if (result + nowReadLen < byteBuffer.limit()) {
                 socketChannel.write(byteBuffer, result + nowReadLen, this);
             } else {
