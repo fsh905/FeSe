@@ -29,6 +29,9 @@ public class SeCookies {
             return;
         }
         String[] kvs = str.split("; ");
+        if (kvs.length < 2) {
+            return;
+        }
         for (String kv : kvs) {
             String[] ks = kv.split("=");
             cookies.put(ks[0], ks[1]);
