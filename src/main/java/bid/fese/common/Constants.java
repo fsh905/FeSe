@@ -1,5 +1,6 @@
 package bid.fese.common;
 
+import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -16,8 +17,8 @@ public class Constants {
     public static final int MAX_UPLOAD_SIZE = 1024 * 1024 * 4;
 
     public static final int DEFAULT_UPLOAD_SIZE = 1024 * 8;
-
-
+    // 中国时区
+    public static final ZoneId ZONE_ID = ZoneId.of(ZoneId.SHORT_IDS.get("CTT"));
 
     // keep alive时长， 默认5min
     public static final long DEFAULT_KEEP_ALIVE_TIME = 5L;

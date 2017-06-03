@@ -1,7 +1,10 @@
 package bid.fese.entity;
 
 import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,12 +15,37 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class StaticSoftCache {
 
-    private Map<String, SoftReference<ByteBuffer>> cache = new ConcurrentHashMap<>();
+    private Map<String, SoftReference<CacheEntity>> cache = new ConcurrentHashMap<>();
 
-    public ByteBuffer get(String url) {
-        SoftReference<ByteBuffer> value = cache.get(url);
+    public class CacheEntity {
+        private ByteBuffer byteBuffer;
+        private ZonedDateTime time;
+        private String fileType;
+        CacheEntity(ByteBuffer byteBuffer, ZonedDateTime time, String fileType) {
+            this.byteBuffer = byteBuffer;
+            this.time = time;
+            this.fileType = fileType;
+        }
+
+        public ByteBuffer getByteBuffer() {
+            return byteBuffer;
+        }
+
+        public ZonedDateTime getTime() {
+            return time;
+        }
+
+        public String getFileType() {
+            return fileType;
+        }
+    }
+
+
+
+    public CacheEntity get(String url) {
+        SoftReference<CacheEntity> value = cache.get(url);
         if (value != null) {
-            ByteBuffer res = value.get();
+            CacheEntity res = value.get();
             if (res == null) {
                 // 已被清理
                 cache.remove(url);
@@ -28,12 +56,13 @@ public class StaticSoftCache {
         return null;
     }
 
-    public ByteBuffer put(String url, byte[] body) {
+    public CacheEntity put(String url, byte[] body, ZonedDateTime time, String fileType) {
         ByteBuffer buffer = ByteBuffer.allocateDirect(body.length);
         buffer.put(body);
         buffer.rewind();
-        cache.put(url, new SoftReference<>(buffer));
-        return buffer;
+        CacheEntity cacheEntity = new CacheEntity(buffer, time, fileType);
+        cache.put(url, new SoftReference<>(cacheEntity));
+        return cacheEntity;
     }
 
 }

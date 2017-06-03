@@ -16,6 +16,10 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -31,7 +35,7 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private PrintWriter printWriter;
-    private ByteBuffer entity;
+    private StaticSoftCache.CacheEntity entity;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
     private String remoteAddress;
@@ -68,7 +72,6 @@ public class SeResponse {
         return header;
     }
 
-
     public boolean isKeepAlive() {
         return isKeepAlive;
     }
@@ -103,11 +106,9 @@ public class SeResponse {
                 logger.debug("not cache " + url);
                 try {
                     byte[] body = FileUtil.file2ByteArray(file, isSupportGZIP);
-                    entity = RequestHandlers.getCache().put(url, body);
                     String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
-                    if (fileType != null) {
-                        header.addHeaderParameter(SeHeader.CONTENT_TYPE, fileType);
-                    }
+                    entity = RequestHandlers.getCache().put(url,
+                            body, ZonedDateTime.now(Constants.ZONE_ID), fileType == null ? "none": fileType);
                 } catch (IOException e) {
                     logger.error("write file occur error", e);
                     if (isShowPage) {
@@ -122,6 +123,8 @@ public class SeResponse {
                     header.addHeaderParameter(SeHeader.CONTENT_ENCODING, SeHeader.GZIP);
                     logger.debug("use gzip");
                 }
+                header.addHeaderParameter(SeHeader.CONTENT_TYPE, entity.getFileType());
+                header.addHeaderParameter(SeHeader.LAST_MODIFIED, entity.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME));
             } else {
                 _404_notFound();
             }
@@ -160,11 +163,12 @@ public class SeResponse {
         WriteHandler writeHandler = new WriteHandler(socketChannel, this, remoteAddress);
         // 静态资源会进行缓存， 因此使用不同的发送方式
         if (entity != null) {
-            entity.rewind();
-            header.setContentLength(entity.limit());
+            ByteBuffer buffer = entity.getByteBuffer();
+            buffer.rewind();
+            header.setContentLength(buffer.limit());
             logger.debug("response header len:" + header.getHeaderParameter(SeHeader.CONTENT_LENGTH));
             byte[] headerBytes = header.toString().getBytes();
-            writeHandler.sendResponse(headerBytes, entity);
+            writeHandler.sendResponse(headerBytes, buffer);
         } else {
             header.setContentLength(outStream.nextBytes);
             logger.debug("response header len:" + header.getHeaderParameter(SeHeader.CONTENT_LENGTH));
