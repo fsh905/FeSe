@@ -2,6 +2,7 @@ package bid.fese.common;
 
 import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * Created by feng_sh on 5/23/2017.
@@ -16,7 +17,11 @@ public class Constants {
     // 最大上传文件大小
     public static final int MAX_UPLOAD_SIZE = 1024 * 1024 * 4;
 
+    public static final Pattern NO_GZIP_STATIC_RESOURCE = Pattern.compile("(jpg)|(png)|(gif)|(svg)|(mp3)|(mp4)|(flv)");
+
     public static final int DEFAULT_UPLOAD_SIZE = 1024 * 8;
+    // 默认响应的大小
+    public static final int DEFAULT_RESPONSE_SIZE = 1024 * 8;
     // 中国时区
     public static final ZoneId ZONE_ID = ZoneId.of(ZoneId.SHORT_IDS.get("CTT"));
 

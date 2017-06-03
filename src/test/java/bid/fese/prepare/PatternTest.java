@@ -3,6 +3,7 @@ package bid.fese.prepare;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 /**
  * Created by feng_sh on 17-5-25.
@@ -21,10 +22,15 @@ public class PatternTest {
 /*        Pattern p1 = Pattern.compile("\\W+.(jpg)|(gif)$");
         System.out.println(p1.matcher("mat.jpg").matches());*/
 
-        Object[] os = new Object[3][2];
+/*        Object[] os = new Object[3][2];
         for (int i = 0; i < os.length; i++) {
             os[i] = new Object[]{i, "" + i};
         }
-        System.out.println(Arrays.deepToString(os));
+        System.out.println(Arrays.deepToString(os));*/
+        Pattern p = Pattern.compile("(jpg)|(png)");
+        System.out.println(p.matcher("jpg").matches());
+        System.out.println(p.matcher("png").matches());
+        System.out.println(p.matcher("ff.png").matches());
+        System.out.println("hehe.jpg".substring(4));
     }
 }

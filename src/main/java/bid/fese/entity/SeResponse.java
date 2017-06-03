@@ -8,19 +8,16 @@ import bid.fese.handler.WriteHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.CompletionHandler;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by feng_sh on 5/24/2017.
@@ -43,9 +40,7 @@ public class SeResponse {
     public SeResponse(SeRequest request) {
         this.socketChannel = request.getSocketChannel();
         // 判断是否支持gzip
-        if (request.getHeader().getHeaderParameter(SeHeader.ACCEPT_ENCODING) != null) {
-            isSupportGZIP = request.getHeader().getHeaderParameter(SeHeader.ACCEPT_ENCODING).contains("gzip");
-        }
+        isSupportGZIP = false;
         // new header new cookie
         this.header = new SeHeader();
         this.cookies = new SeCookies();
@@ -76,6 +71,14 @@ public class SeResponse {
         return isKeepAlive;
     }
 
+    public boolean isSupportGZIP() {
+        return isSupportGZIP;
+    }
+
+    public void setSupportGZIP(boolean supportGZIP) {
+        isSupportGZIP = supportGZIP;
+    }
+
     public void writeFile(String filePath) {
         writeFile(new File(filePath));
     }
@@ -103,7 +106,7 @@ public class SeResponse {
             // 检查文件是否修改
             entity = RequestHandlers.getCache().get(url);
             if (entity == null) {
-                logger.debug("not cache " + url);
+                logger.info("not cache " + url);
                 try {
                     byte[] body = FileUtil.file2ByteArray(file, isSupportGZIP);
                     String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
@@ -117,6 +120,8 @@ public class SeResponse {
                         _500_Server_Error();
                     }
                 }
+            } else {
+                logger.info("hit cache " + url);
             }
             if (entity != null) {
                 if (isSupportGZIP) {

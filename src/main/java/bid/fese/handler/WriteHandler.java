@@ -44,10 +44,10 @@ public class WriteHandler {
             byteBuffer.put(bodyBytes, 0, len);
             byteBuffer.rewind();
             logger.debug("copy done");
-            socketChannel.write(byteBuffer, socketChannel, new WriteBodyHandler());
+            socketChannel.write(byteBuffer, 0, new WriteBodyHandler(byteBuffer, socketChannel));
         } else {
             logger.debug("use split");
-            socketChannel.write(ByteBuffer.wrap(headerBytes), bodyBytes, new WriteHeaderHandler());
+            socketChannel.write(ByteBuffer.wrap(headerBytes), ByteBuffer.wrap(bodyBytes), new WriteStaticHandler());
         }
     }
 
@@ -63,10 +63,12 @@ public class WriteHandler {
 
 
     private class WriteStaticHandler implements CompletionHandler<Integer, ByteBuffer> {
+
         @Override
         public void completed(Integer result, ByteBuffer attachment) {
             logger.info("response header success: -" + remoteAddress);
-            socketChannel.write(attachment, socketChannel, new WriteBodyHandler());
+
+            socketChannel.write(attachment, 0, new WriteBodyHandler(attachment, socketChannel));
         }
 
         @Override
@@ -79,48 +81,41 @@ public class WriteHandler {
         }
     }
 
-    private class WriteHeaderHandler implements CompletionHandler<Integer, byte[]> {
-        @Override
-        public void completed(Integer result, byte[] attachment) {
-            logger.info("response header success: -" + remoteAddress);
-            socketChannel.write(ByteBuffer.wrap(attachment), socketChannel, new WriteBodyHandler());
+    private class WriteBodyHandler implements CompletionHandler<Integer, Integer> {
+        private ByteBuffer byteBuffer;
+        private AsynchronousSocketChannel socketChannel;
+        WriteBodyHandler(ByteBuffer byteBuffer, AsynchronousSocketChannel socketChannel) {
+            this.socketChannel = socketChannel;
+            this.byteBuffer = byteBuffer;
         }
-
         @Override
-        public void failed(Throwable exc, byte[] attachment) {
-            if (exc instanceof ClosedChannelException) {
-                logger.error("socket already closed, send header error -" + remoteAddress);
-                return;
-            }
-            logger.error("response header error -" + remoteAddress, attachment, exc);
-        }
-    }
-
-
-    private class WriteBodyHandler implements CompletionHandler<Integer, AsynchronousSocketChannel> {
-        @Override
-        public void completed(Integer result, AsynchronousSocketChannel socketChannel) {
-            logger.info("response success: -" + remoteAddress);
-            // 如果设置keepAlive
-            if (socketChannel.isOpen() && !response.isKeepAlive()) {
-                logger.debug("close socket" + remoteAddress);
-                try {
-                    socketChannel.close();
-                } catch (IOException e) {
-                    logger.error("close response error -" + remoteAddress);
-                }
+        public void completed(Integer result, Integer nowReadLen) {
+            logger.debug("write len:" + result + " all write len:" + (result + nowReadLen) + " data len:" + byteBuffer.limit());
+            if (result + nowReadLen < byteBuffer.limit()) {
+                socketChannel.write(byteBuffer, result + nowReadLen, this);
             } else {
-                logger.debug("already set keep-alive, this socket not need close");
+                logger.info("response success: -" + remoteAddress);
+                // 如果设置keepAlive
+                if (socketChannel.isOpen() && !response.isKeepAlive()) {
+                    logger.debug("close socket" + remoteAddress);
+                    try {
+                        socketChannel.close();
+                    } catch (IOException e) {
+                        logger.error("close response error -" + remoteAddress);
+                    }
+                } else {
+                    logger.debug("already set keep-alive, this socket not need close");
+                }
             }
         }
 
         @Override
-        public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+        public void failed(Throwable exc, Integer nowReadLen) {
             if (exc instanceof ClosedChannelException) {
                 logger.error("socket already closed -" + remoteAddress);
                 return;
             }
-            logger.error("response error -" + remoteAddress, attachment, exc);
+            logger.error("response error -" + remoteAddress, nowReadLen, exc);
         }
     }
 
