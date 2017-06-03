@@ -1,21 +1,23 @@
 package bid.fese.entity;
 
 import java.lang.ref.SoftReference;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by feng_sh on 6/2/2017.
  * 静态资源缓存
+ * 采用SoftReference进行连接， 当为软引用时，只有当快要内存溢出时才会进行回收
  */
 public class StaticSoftCache {
 
-    private Map<String, SoftReference<byte[]>> cache = new ConcurrentHashMap<>();
+    private Map<String, SoftReference<ByteBuffer>> cache = new ConcurrentHashMap<>();
 
-    public byte[] get(String url) {
-        SoftReference<byte[]> value = cache.get(url);
+    public ByteBuffer get(String url) {
+        SoftReference<ByteBuffer> value = cache.get(url);
         if (value != null) {
-            byte[] res = value.get();
+            ByteBuffer res = value.get();
             if (res == null) {
                 // 已被清理
                 cache.remove(url);
@@ -26,8 +28,12 @@ public class StaticSoftCache {
         return null;
     }
 
-    public void put(String url, byte[] body) {
-        cache.put(url, new SoftReference<byte[]>(body));
+    public ByteBuffer put(String url, byte[] body) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(body.length);
+        buffer.put(body);
+        buffer.rewind();
+        cache.put(url, new SoftReference<>(buffer));
+        return buffer;
     }
 
 }

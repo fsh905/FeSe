@@ -51,6 +51,33 @@ public class WriteHandler {
         }
     }
 
+    /**
+     * 发送响应
+     * @param headerBytes 头部字段
+     * @param bodyBytes body字段
+     */
+    public void sendResponse(byte[] headerBytes, ByteBuffer bodyBytes) {
+        logger.debug("write static ,use split");
+        socketChannel.write(ByteBuffer.wrap(headerBytes), bodyBytes, new WriteStaticHandler());
+    }
+
+
+    private class WriteStaticHandler implements CompletionHandler<Integer, ByteBuffer> {
+        @Override
+        public void completed(Integer result, ByteBuffer attachment) {
+            logger.info("response header success: -" + remoteAddress);
+            socketChannel.write(attachment, socketChannel, new WriteBodyHandler());
+        }
+
+        @Override
+        public void failed(Throwable exc, ByteBuffer attachment) {
+            if (exc instanceof ClosedChannelException) {
+                logger.error("socket already closed, send header error -" + remoteAddress);
+                return;
+            }
+            logger.error("response header error -" + remoteAddress, attachment, exc);
+        }
+    }
 
     private class WriteHeaderHandler implements CompletionHandler<Integer, byte[]> {
         @Override
@@ -68,6 +95,7 @@ public class WriteHandler {
             logger.error("response header error -" + remoteAddress, attachment, exc);
         }
     }
+
 
     private class WriteBodyHandler implements CompletionHandler<Integer, AsynchronousSocketChannel> {
         @Override

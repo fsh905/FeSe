@@ -19,9 +19,9 @@ public class Constants {
 
 
 
-    // keep alive时长， 默认15s
-    public static final long DEFAULT_KEEP_ALIVE_TIME = 15L;
-    public static final TimeUnit DEFAULT_KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
+    // keep alive时长， 默认5min
+    public static final long DEFAULT_KEEP_ALIVE_TIME = 5L;
+    public static final TimeUnit DEFAULT_KEEP_ALIVE_TIME_UNIT = TimeUnit.MINUTES;
 
     // classpath
     public static final String CLASS_PATH = "CLASS_PATH";

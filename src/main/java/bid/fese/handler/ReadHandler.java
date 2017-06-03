@@ -39,7 +39,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 attachment.clear();
                 keepAlive(attachment);
             } else {
-                log.error("read byte len is -1, attempt to close socket");
+                log.error("read byte len is " + readBytesLen + ", attempt to close socket");
                 if (socketChannel.isOpen()) {
                     try {
                         socketChannel.close();

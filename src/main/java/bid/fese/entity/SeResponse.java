@@ -14,6 +14,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Paths;
 import java.util.zip.GZIPOutputStream;
 
@@ -30,7 +31,7 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private PrintWriter printWriter;
-
+    private ByteBuffer entity;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
     private String remoteAddress;
@@ -96,12 +97,13 @@ public class SeResponse {
             if (isSupportGZIP) {
                 url += "GZIP";
             }
-            byte[] body = RequestHandlers.getCache().get(url);
-            if (body == null) {
+            // 检查文件是否修改
+            entity = RequestHandlers.getCache().get(url);
+            if (entity == null) {
                 logger.debug("not cache " + url);
                 try {
-                    body = FileUtil.file2ByteArray(file, isSupportGZIP);
-                    RequestHandlers.getCache().put(url, body);
+                    byte[] body = FileUtil.file2ByteArray(file, isSupportGZIP);
+                    entity = RequestHandlers.getCache().put(url, body);
                     String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
                     if (fileType != null) {
                         header.addHeaderParameter(SeHeader.CONTENT_TYPE, fileType);
@@ -115,13 +117,11 @@ public class SeResponse {
                     }
                 }
             }
-            if (body != null) {
+            if (entity != null) {
                 if (isSupportGZIP) {
                     header.addHeaderParameter(SeHeader.CONTENT_ENCODING, SeHeader.GZIP);
                     logger.debug("use gzip");
                 }
-                outStream.bytes = body;
-                outStream.nextBytes = body.length;
             } else {
                 _404_notFound();
             }
@@ -154,11 +154,23 @@ public class SeResponse {
      * 主要功能是发送, 必须执行flush才能发送
      */
     public void flush() {
-        header.setContentLength(outStream.nextBytes);
-        byte[] headerBytes = header.toString().getBytes();
-        logger.debug("response header:\n" + header.toString());
-        new WriteHandler(socketChannel, this, remoteAddress)
-                .sendResponse(headerBytes, outStream.bytes, outStream.nextBytes);
+        // 不对头部进行缓存是因为有可能会进行cookie的修改等
+        // 因此头部是动态的，不能进行缓存
+
+        WriteHandler writeHandler = new WriteHandler(socketChannel, this, remoteAddress);
+        // 静态资源会进行缓存， 因此使用不同的发送方式
+        if (entity != null) {
+            entity.rewind();
+            header.setContentLength(entity.limit());
+            logger.debug("response header len:" + header.getHeaderParameter(SeHeader.CONTENT_LENGTH));
+            byte[] headerBytes = header.toString().getBytes();
+            writeHandler.sendResponse(headerBytes, entity);
+        } else {
+            header.setContentLength(outStream.nextBytes);
+            logger.debug("response header len:" + header.getHeaderParameter(SeHeader.CONTENT_LENGTH));
+            byte[] headerBytes = header.toString().getBytes();
+            writeHandler.sendResponse(headerBytes, outStream.bytes, outStream.nextBytes);
+        }
     }
 
     public OutputStream getOutStream() {
