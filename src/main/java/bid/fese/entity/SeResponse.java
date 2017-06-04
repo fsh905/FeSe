@@ -32,7 +32,6 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private PrintWriter printWriter;
-//    private StaticSoftCache.CacheEntity entity;
     private StaticSoftCacheBytes.CacheEntityBytes entityBytes;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
@@ -134,35 +133,6 @@ public class SeResponse {
             } else {
                 _404_notFound();
             }
-            /*entity = RequestHandlers.getCache().get(url);
-            if (entity == null) {
-                logger.info("not cache " + url);
-                try {
-                    byte[] body = FileUtil.file2ByteArray(file, isSupportGZIP);
-                    String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
-                    entity = RequestHandlers.getCache().put(url,
-                            body, ZonedDateTime.now(Constants.ZONE_ID), fileType == null ? "none": fileType);
-                } catch (IOException e) {
-                    logger.error("write file occur error", e);
-                    if (isShowPage) {
-                        _500_Server_Error_Page();
-                    } else {
-                        _500_Server_Error();
-                    }
-                }
-            } else {
-                logger.info("hit cache " + url);
-            }
-            if (entity != null) {
-                if (isSupportGZIP) {
-                    header.addHeaderParameter(SeHeader.CONTENT_ENCODING, SeHeader.GZIP);
-                    logger.debug("use gzip");
-                }
-                header.addHeaderParameter(SeHeader.CONTENT_TYPE, entity.getFileType());
-                header.addHeaderParameter(SeHeader.LAST_MODIFIED, entity.getTime().format(DateTimeFormatter.RFC_1123_DATE_TIME));
-            } else {
-                _404_notFound();
-            }*/
         }
     }
 

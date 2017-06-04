@@ -12,7 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by feng_sh on 6/2/2017.
  * 静态资源缓存
  * 采用SoftReference进行连接， 当为软引用时，只有当快要内存溢出时才会进行回收
+ * 当多线程连接时， 每次调用byteBuffer前需要进行rewind()，
+ * 如果此时byteBuffer被其他线程使用， 则会导致发送失败，
+ * 现已改成{@link bid.fese.entity.StaticSoftCacheBytes}
  */
+@Deprecated
 public class StaticSoftCache {
 
     private Map<String, SoftReference<CacheEntity>> cache = new ConcurrentHashMap<>();

@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by feng_sh on 6/2/2017.
- * 静态资源缓存
+ * 静态资源缓存， 仅缓存byte[]防止使用ByteBuffer出现的bug
  * 采用SoftReference进行连接， 当为软引用时，只有当快要内存溢出时才会进行回收
  */
 public class StaticSoftCacheBytes {
