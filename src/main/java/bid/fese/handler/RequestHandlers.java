@@ -3,7 +3,6 @@ package bid.fese.handler;
 import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
 import bid.fese.entity.SeRequest;
-import bid.fese.entity.StaticSoftCache;
 import bid.fese.entity.StaticSoftCacheBytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +31,6 @@ public class RequestHandlers {
 
     private static DispatcherHandler dynamicDispatcherHandler;
 
-//    private static ThreadLocal<StaticSoftCache> cacheThreadLocal = new ThreadLocal<>();
     private static ThreadLocal<StaticSoftCacheBytes> cacheThreadLocal = new ThreadLocal<>();
 
     private RequestHandlers() {}
