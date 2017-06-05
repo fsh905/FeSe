@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
@@ -211,7 +212,7 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
             int index = requestLineParse(bytes, header, headParseIndex);
             headParseIndex += index;
 
-            String key,value;
+            String key = null, value = null;
             while (headParseIndex < headEndIndex) {
                 while (bytes[headParseIndex] != ':'){
                     headParseIndex ++;
@@ -221,11 +222,15 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                 while (bytes[headParseIndex] != '\r'){
                     headParseIndex ++;
                 }
-                value = new String(bytes,index,headParseIndex-index);
+                try {
+                    value = new String(bytes,index,headParseIndex-index, "ISO-8859-1");
+                } catch (UnsupportedEncodingException e) {
+                    log.error("header parameter iso-8859-1 encode not support");
+                }
                 index = headParseIndex += 2;
                 header.addHeaderParameter(key,value);
 
-//                log.info("key:"+key+"-\tvalue:"+value);
+//                log.debug("parse header parameter: key:"+key+"-\tvalue:"+value);
             }
         }
 
@@ -306,10 +311,14 @@ public class ReadHandler implements CompletionHandler<Integer,ByteBuffer>{
                     }
                     index ++;
                 }
-                value = new String(bytes,old,index-old);
+                try {
+                    value = new String(bytes,old,index-old, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    log.error("parse url not support utf-8");
+                }
 
                 header.addRequestParameter(key,value);
-//                log.debug("k:"+key+" \tv:"+value);
+                log.debug("parse url k:"+key+" \tv:"+value);
             }
             return index + 1;
         }

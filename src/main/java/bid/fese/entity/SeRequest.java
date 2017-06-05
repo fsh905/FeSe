@@ -1,7 +1,13 @@
 package bid.fese.entity;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.MapMessage;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Set;
 
@@ -21,7 +27,7 @@ public class SeRequest {
         TRACE
     }
 
-//    private static final Logger log = LogManager.getLogger(SeRequest.class);
+    private static final Logger log = LogManager.getLogger(SeRequest.class);
 
     private SeHeader header;
     private SeCookies cookies;
@@ -101,7 +107,12 @@ public class SeRequest {
                         }
                         index++;
                     }
-                    value = new String(in, old, index - old);
+                    try {
+                        value = new String(in, old, index - old, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        log.error("parse post param error, use utf-8");
+                    }
+                    log.debug("post param k:" + key + "- v:" + value);
                     header.addRequestParameter(key, value);
                     index++;
                 }
