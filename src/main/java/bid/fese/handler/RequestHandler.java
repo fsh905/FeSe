@@ -17,66 +17,16 @@ import java.util.List;
 public class RequestHandler implements Runnable {
 
 
-
+    private final static Logger logger = LogManager.getLogger(RequestHandler.class);
+    private static char[] postfix = (char[]) ApplicationContext.get(Constants.CONFIG_REQUEST_POSTFIX);
+    private final RequestHandlers requestHandlers;
     // 每个线程一个请求队列, 但是插入和删除是属于不同的线程
     // 采用ArrayList， 指定初始大小为10
     // 可通过制定不同的大小来应对不同的环境
     private List<SeRequest> requests = new ArrayList<>(10);
-    private static char[] postfix = (char[]) ApplicationContext.get(Constants.CONFIG_REQUEST_POSTFIX);
-    private final static Logger logger = LogManager.getLogger(RequestHandler.class);
 
-    public void addRequest(SeRequest request) {
-        logger.debug("syn start:" + System.currentTimeMillis());
-        synchronized (requests) {
-            requests.add(request);
-            requests.notifyAll();
-        }
-        logger.debug("syn end:" + System.currentTimeMillis());
-        // 请求数计算， 用于负载均衡
-        RequestHandlers.addRequestCount();
-    }
-
-
-    @Override
-    public void run() {
-
-        SeRequest request = null;
-        RequestHandler handler = null;
-
-        while (true) {
-            synchronized (requests) {
-                while (requests.isEmpty()) {
-                    try {
-                        requests.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                request = requests.remove(0);
-            }
-            RequestHandlers.minusRequestCount();
-            SeResponse response = new SeResponse(request);
-            dispatcherRequest(request, response);
-        }
-    }
-
-    /**
-     * 请求分配
-     * @param request 请求
-     * @param response 相应
-     */
-    private void dispatcherRequest(SeRequest request, SeResponse response) {
-        logger.debug("start dispatcher request:" + request.getUrl());
-        // 这里使用的是ThreadLocal， 针对不同的线程分配单独的handler
-        if (isStatic(request.getUrl())) {
-            logger.info(request.getRemoteAddress() + " ["+request.getMethod()+"] " + request.getUrl() + " [static]");
-            logger.debug(request.getUrl() + " is assign to static:" + System.currentTimeMillis());
-            RequestHandlers.getStaticDispatcherHandler().handlerRequest(request, response);
-        } else {
-            logger.info(request.getRemoteAddress() + " ["+request.getMethod()+"] " + request.getUrl() + " [dynamic]");
-            logger.debug(request.getUrl() + " is assign to dynamic:" + System.currentTimeMillis());
-            RequestHandlers.getDynamicDispatcherHandler().handlerRequest(request, response);
-        }
+    public RequestHandler(RequestHandlers requestHandlers) {
+        this.requestHandlers = requestHandlers;
     }
 
     private static boolean isStatic(String url) {
@@ -95,6 +45,51 @@ public class RequestHandler implements Runnable {
             }
         }
         return false;
+    }
+
+    public void addRequest(SeRequest request) {
+        synchronized (requests) {
+            requests.add(request);
+            requests.notifyAll();
+        }
+        logger.debug("syn end");
+    }
+
+    @Override
+    public void run() {
+        SeRequest request = null;
+        while (true) {
+            synchronized (requests) {
+                while (requests.isEmpty()) {
+                    try {
+                        requests.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                request = requests.remove(0);
+            }
+            SeResponse response = new SeResponse(request, requestHandlers);
+            dispatcherRequest(request, response);
+        }
+    }
+
+    /**
+     * 请求分配
+     *
+     * @param request  请求
+     * @param response 相应
+     */
+    private void dispatcherRequest(SeRequest request, SeResponse response) {
+        logger.debug("start dispatcher request:" + request.getUrl());
+        // 这里使用的是ThreadLocal， 针对不同的线程分配单独的handler
+        if (isStatic(request.getUrl())) {
+            logger.info(request.getRemoteAddress() + " [" + request.getMethod() + "] " + request.getUrl() + " [static]");
+            requestHandlers.getStaticDispatcherHandler().handlerRequest(request, response);
+        } else {
+            logger.info(request.getRemoteAddress() + " [" + request.getMethod() + "] " + request.getUrl() + " [dynamic]");
+            requestHandlers.getDynamicDispatcherHandler().handlerRequest(request, response);
+        }
     }
 
 }

@@ -2,12 +2,10 @@ package bid.fese.entity;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.MapMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Set;
 
@@ -18,17 +16,7 @@ import java.util.Set;
  */
 public class SeRequest {
 
-    public enum METHOD {
-        CONNECT,
-        DELETE,
-        GET,
-        HEAD,
-        PATCH, POST, PUT,
-        TRACE
-    }
-
     private static final Logger log = LogManager.getLogger(SeRequest.class);
-
     private SeHeader header;
     private SeCookies cookies;
     private byte[] in;
@@ -36,7 +24,6 @@ public class SeRequest {
     private AsynchronousSocketChannel socketChannel;
     private boolean isKeepAlive;
     private String remoteAddress;
-
     public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, byte[] in, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
         this.in = in;
@@ -130,7 +117,6 @@ public class SeRequest {
         return header.getHeaderParameter(name);
     }
 
-
     AsynchronousSocketChannel getSocketChannel() {
         return socketChannel;
     }
@@ -174,6 +160,15 @@ public class SeRequest {
     @Override
     public boolean equals(Object obj) {
         return obj.hashCode() == hashCode();
+    }
+
+    public enum METHOD {
+        CONNECT,
+        DELETE,
+        GET,
+        HEAD,
+        PATCH, POST, PUT,
+        TRACE
     }
 
     private class InStream extends InputStream {

@@ -28,22 +28,18 @@ public class Booter {
 
     public static void boot() {
         Booter booter = new Booter();
+        RequestHandlers requestHandlers = new RequestHandlers();
         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, 8080);
-        booter.init();
-        FeServer server = new FeServer((int) ApplicationContext.get(Constants.CONFIG_SERVER_PORT));
+        booter.config();
+        requestHandlers.initHandlers();
+        FeServer server = new FeServer((int) ApplicationContext.get(Constants.CONFIG_SERVER_PORT), requestHandlers);
         int cpu = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < cpu; i++) {
-            RequestHandler handler = new RequestHandler();
-            RequestHandlers.addRequestHandler(handler);
+            RequestHandler handler = new RequestHandler(requestHandlers);
+            requestHandlers.addRequestHandler(handler);
             new Thread(handler, "handler-" + i).start();
         }
         new Thread(server, "server").start();
-    }
-
-    private void init() {
-        config();
-        // 初始化一些配置
-        RequestHandlers.initHandlers();
     }
 
     private void config() {
@@ -55,12 +51,12 @@ public class Booter {
             logger.error("load properties error", e);
         }
         if (props != null) {
-            for(String k : props.keySet()) {
+            for (String k : props.keySet()) {
                 switch (k) {
-                    case Constants.CONFIG_SERVER_PORT :
+                    case Constants.CONFIG_SERVER_PORT:
                         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, Integer.parseInt(props.get(k)));
                         break;
-                    case Constants.CONFIG_REQUEST_POSTFIX :
+                    case Constants.CONFIG_REQUEST_POSTFIX:
                         ApplicationContext.put(Constants.CONFIG_REQUEST_POSTFIX, props.get(k).toLowerCase().toCharArray());
                         break;
                     default:
@@ -81,7 +77,7 @@ public class Booter {
                 continue;
             }
             String[] kv = line.trim().split("=");
-            logger.debug("server configure: ["+ kv[0] + "]\t[" + kv[1] + "]");
+            logger.debug("server configure: [" + kv[0] + "]\t[" + kv[1] + "]");
             props.put(kv[0], kv[1]);
         }
         reader.close();

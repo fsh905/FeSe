@@ -15,11 +15,6 @@ import java.util.concurrent.CountDownLatch;
  * Created by feng_sh on 17-5-26.
  */
 public class RequestTest {
-    @Test
-    public void request() throws IOException {
-
-    }
-
     static CountDownLatch latch = new CountDownLatch(3);
 
     public static void main(String[] args) throws IOException {
@@ -91,6 +86,11 @@ public class RequestTest {
             }
         }.start();
 
+
+    }
+
+    @Test
+    public void request() throws IOException {
 
     }
 

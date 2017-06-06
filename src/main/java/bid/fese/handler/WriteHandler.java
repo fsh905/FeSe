@@ -31,8 +31,9 @@ public class WriteHandler {
 
     /**
      * 发送响应
+     *
      * @param headerBytes 头部字段
-     * @param bodyBytes body字段
+     * @param bodyBytes   body字段
      */
     public void sendResponse(byte[] headerBytes, byte[] bodyBytes, int len) {
         logger.debug("len is:" + len);
@@ -53,8 +54,9 @@ public class WriteHandler {
 
     /**
      * 发送响应
+     *
      * @param headerBytes 头部字段
-     * @param bodyBytes body字段
+     * @param bodyBytes   body字段
      */
     public void sendResponse(byte[] headerBytes, ByteBuffer bodyBytes) {
         logger.debug("write static ,use split");
@@ -84,10 +86,12 @@ public class WriteHandler {
     private class WriteBodyHandler implements CompletionHandler<Integer, Integer> {
         private ByteBuffer byteBuffer;
         private AsynchronousSocketChannel socketChannel;
+
         WriteBodyHandler(ByteBuffer byteBuffer, AsynchronousSocketChannel socketChannel) {
             this.socketChannel = socketChannel;
             this.byteBuffer = byteBuffer;
         }
+
         @Override
         public void completed(Integer result, Integer nowReadLen) {
             logger.debug("write len:" + result + " all write len:" + (result + nowReadLen) + " data len:" + byteBuffer.limit() + " -" + remoteAddress);

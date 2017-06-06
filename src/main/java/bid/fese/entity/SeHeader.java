@@ -32,7 +32,6 @@ public class SeHeader {
     public static final byte[] HEADER_END = {13, 10, 13, 10};
 
 
-
     private SeRequest.METHOD method;
     private String status;
     private String url;

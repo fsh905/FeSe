@@ -17,6 +17,7 @@ public class SeCookies {
         cookies = new HashMap<>();
         parse();
     }
+
     public SeCookies() {
         cookies = new HashMap<>();
     }

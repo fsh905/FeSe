@@ -32,13 +32,15 @@ public class SeResponse {
     private SeHeader header;
     private OutStream outStream;
     private PrintWriter printWriter;
+    private RequestHandlers requestHandlers;
     private StaticSoftCacheBytes.CacheEntityBytes entityBytes;
     private boolean isKeepAlive;
     private boolean isSupportGZIP;
     private String remoteAddress;
 
-    public SeResponse(SeRequest request) {
+    public SeResponse(SeRequest request, RequestHandlers requestHandlers) {
         this.socketChannel = request.getSocketChannel();
+        this.requestHandlers = requestHandlers;
         // 判断是否支持gzip
         isSupportGZIP = false;
         // new header new cookie
@@ -104,14 +106,15 @@ public class SeResponse {
                 url += "GZIP";
             }
             // 检查文件是否修改
-            entityBytes = RequestHandlers.getCache().get(url);
+            entityBytes = requestHandlers.getCache().get(url);
+//            long time = file.lastModified();
             if (entityBytes == null) {
                 logger.info("not cache " + url);
                 try {
                     byte[] body = FileUtil.file2ByteArray(file, isSupportGZIP);
                     String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
-                    entityBytes = RequestHandlers.getCache().put(url,
-                            body, ZonedDateTime.now(Constants.ZONE_ID), fileType == null ? "none": fileType);
+                    entityBytes = requestHandlers.getCache().put(url,
+                            body, ZonedDateTime.now(Constants.ZONE_ID), fileType == null ? "none" : fileType);
                 } catch (IOException e) {
                     logger.error("write file occur error", e);
                     if (isShowPage) {
@@ -138,7 +141,7 @@ public class SeResponse {
 
     private void _404_notFoundPage() {
         writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
-            + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
+                + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
     }
 
     private void _500_Server_Error_Page() {
@@ -196,7 +199,7 @@ public class SeResponse {
         return printWriter;
     }
 
-    private class OutStream extends OutputStream{
+    private class OutStream extends OutputStream {
 
         private byte[] bytes;
         private int nextBytes;

@@ -12,7 +12,8 @@ import bid.fese.entity.SeResponse;
  */
 public class StaticDispatcherHandler implements DispatcherHandler {
     @Override
-    public void initHandler() {}
+    public void initHandler() {
+    }
 
     @Override
     public void handlerRequest(SeRequest request, SeResponse response) {
@@ -32,6 +33,7 @@ public class StaticDispatcherHandler implements DispatcherHandler {
 
     /**
      * 获取后缀
+     *
      * @param url 链接
      * @return 后缀 or null
      */
