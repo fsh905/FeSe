@@ -35,8 +35,8 @@ public class RequestHandlers {
     private DispatcherHandler staticDispatcherHandler;
 
     // 这里之所以使用ThreadLocal是因为
-    // １,底层采用ｍａｐ实现
-    // 多个线程同时对
+    // 1,底层采用map实现
+    // 2多个线程同时对map操作容易出问题
     private ThreadLocal<StaticSoftCacheBytes> cacheThreadLocal = new ThreadLocal<>();
 
     /**

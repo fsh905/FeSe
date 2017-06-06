@@ -29,8 +29,8 @@ public class StaticSoftCacheBytes {
         return null;
     }
 
-    public CacheEntityBytes put(String url, byte[] body, ZonedDateTime time, String fileType) {
-        CacheEntityBytes cacheEntity = new CacheEntityBytes(body, time, fileType);
+    public CacheEntityBytes put(String url, byte[] body, ZonedDateTime time, long lastModifeTime, String fileType) {
+        CacheEntityBytes cacheEntity = new CacheEntityBytes(body, time, lastModifeTime, fileType);
         cache.put(url, new SoftReference<>(cacheEntity));
         return cacheEntity;
     }
@@ -39,10 +39,11 @@ public class StaticSoftCacheBytes {
         private byte[] byteBuffer;
         private ZonedDateTime time;
         private String fileType;
-
-        CacheEntityBytes(byte[] byteBuffer, ZonedDateTime time, String fileType) {
+        private long lastModifeTime;
+        CacheEntityBytes(byte[] byteBuffer, ZonedDateTime time, long lastModifeTime, String fileType) {
             this.byteBuffer = byteBuffer;
             this.time = time;
+            this.lastModifeTime = lastModifeTime;
             this.fileType = fileType;
         }
 
@@ -56,6 +57,10 @@ public class StaticSoftCacheBytes {
 
         public String getFileType() {
             return fileType;
+        }
+
+        public long getLastModifeTime() {
+            return lastModifeTime;
         }
     }
 

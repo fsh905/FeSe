@@ -107,14 +107,16 @@ public class SeResponse {
             }
             // 检查文件是否修改
             entityBytes = requestHandlers.getCache().get(url);
-//            long time = file.lastModified();
-            if (entityBytes == null) {
+            long time = file.lastModified();
+            if (entityBytes == null || time != entityBytes.getLastModifeTime()) {
                 logger.info("not cache " + url);
                 try {
                     byte[] body = FileUtil.file2ByteArray(file, isSupportGZIP);
                     String fileType = Files.probeContentType(Paths.get(file.getAbsolutePath()));
-                    entityBytes = requestHandlers.getCache().put(url,
-                            body, ZonedDateTime.now(Constants.ZONE_ID), fileType == null ? "none" : fileType);
+                    long lastModifeTime = file.lastModified();
+                    entityBytes = requestHandlers.getCache()
+                            .put(url, body, ZonedDateTime.now(Constants.ZONE_ID),
+                                    lastModifeTime, fileType == null ? "none" : fileType);
                 } catch (IOException e) {
                     logger.error("write file occur error", e);
                     if (isShowPage) {
