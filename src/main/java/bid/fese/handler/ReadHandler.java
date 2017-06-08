@@ -285,7 +285,7 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
                             headParseIndex += 4;
                             break;
                         default:
-                            throw new UnsupportedRequestMethodException("");
+                            throw new UnsupportedRequestMethodException("unsupported request method, error request is :" + new String(bytes));
                     }
                     break;
                 case 84:
@@ -293,13 +293,16 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
                     headParseIndex += 6;
                     break;
                 default:
-                    throw new UnsupportedRequestMethodException("");
+                    throw new UnsupportedRequestMethodException("unsupported request method, error request is : " + new String(bytes));
             }
 
             log.debug("method:" + header.getMethod());
 
             int lastPosi = headParseIndex;
             int index = 0;
+            if (headParseIndex > bytes.length) {
+                throw new UnsupportedRequestMethodException("unsupported request method, error message is :" + new String(bytes));
+            }
             //request
             while (bytes[headParseIndex] != ' ') {
                 if (bytes[headParseIndex] == '?') {
