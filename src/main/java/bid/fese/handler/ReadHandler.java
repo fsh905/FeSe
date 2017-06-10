@@ -219,13 +219,19 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
 
             String key = null, value = null;
             while (headParseIndex < headEndIndex) {
-                while (bytes[headParseIndex] != ':') {
+                while (headEndIndex < bytes.length && bytes[headParseIndex] != ':') {
                     headParseIndex++;
+                }
+                if (headEndIndex >= bytes.length) {
+                    throw new UnsupportedRequestMethodException("can't parse this header:" + new String(bytes));
                 }
                 key = new String(bytes, index, headParseIndex - index);
                 index = headParseIndex += 2;
-                while (bytes[headParseIndex] != '\r') {
+                while (headEndIndex < bytes.length && bytes[headParseIndex] != '\r') {
                     headParseIndex++;
+                }
+                if (headEndIndex > bytes.length) {
+                    throw new UnsupportedRequestMethodException("can't parse this header:" + new String(bytes));
                 }
                 try {
                     value = new String(bytes, index, headParseIndex - index, "ISO-8859-1");
@@ -304,13 +310,16 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
                 throw new UnsupportedRequestMethodException("unsupported request method, error message is :" + new String(bytes));
             }
             //request
-            while (bytes[headParseIndex] != ' ') {
+            while (headParseIndex < bytes.length && bytes[headParseIndex] != ' ') {
                 if (bytes[headParseIndex] == '?') {
                     //hava reque para
                     index = parseRequestParam(bytes, header, headParseIndex);
                     break;
                 }
                 headParseIndex++;
+            }
+            if (headParseIndex > bytes.length) {
+                throw new UnsupportedRequestMethodException("can't parse this header:" + new String(bytes));
             }
             // 解析url
             header.setUrl(new String(bytes, lastPosi, headParseIndex - lastPosi));
@@ -319,7 +328,10 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
 
             lastPosi = (headParseIndex += index);
 
-            while (bytes[headParseIndex] != '\r') headParseIndex++;
+            while (headParseIndex < bytes.length && bytes[headParseIndex] != '\r') headParseIndex++;
+            if (headParseIndex > bytes.length) {
+                throw new UnsupportedRequestMethodException("can't parse this header:" + new String(bytes));
+            }
 
             header.setProtocol(new String(bytes, lastPosi, headParseIndex - lastPosi));
             log.debug("protocol:" + header.getProtocol());
