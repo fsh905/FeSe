@@ -31,37 +31,45 @@ public class FeServer implements Runnable {
 
     @Override
     public void run() {
+        AsynchronousServerSocketChannel serverSocketChannel = null;
+        logger.info("Server start in " + port);
         try {
-            AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel.open();
+            serverSocketChannel = AsynchronousServerSocketChannel.open();
             serverSocketChannel.bind(new InetSocketAddress("0.0.0.0", port));
-            logger.info("Server start in " + port);
-            //链接过来， 生成一个handler
-            serverSocketChannel.accept(serverSocketChannel, new CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel>() {
-                @Override
-                public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel attachment) {
-                    // 继续接收其他请求
-                    serverSocketChannel.accept(attachment, this);
-
-                    try {
-                        logger.info("-------------------------------------------------------------");
-                        logger.info("a new connection establish;" + socketChannel.getRemoteAddress());
-                    } catch (IOException e) {
-                        logger.error("get connection info error;", e);
-                        e.printStackTrace();
-                    }
-                    // 默认
-                    ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.DEFAULT_UPLOAD_SIZE);
-                    socketChannel.read(byteBuffer, byteBuffer, new ReadHandler(socketChannel, handlers));
-                }
-
-                @Override
-                public void failed(Throwable exc, AsynchronousServerSocketChannel attachment) {
-                    logger.error("accept error;", exc);
-                }
-            });
         } catch (IOException e) {
-            logger.error("connect error;", e);
-
+            logger.error("socket server start error", e);
         }
+        if (serverSocketChannel == null) {
+            return;
+        }
+        //链接过来， 生成一个handler
+        serverSocketChannel.accept(serverSocketChannel, new CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel>() {
+            @Override
+            public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel attachment) {
+                // 继续接收其他请求
+                attachment.accept(attachment, this);
+
+                try {
+                    logger.info("-------------------------------------------------------------");
+                    logger.info("a new connection establish;" + socketChannel.getRemoteAddress());
+                } catch (IOException e) {
+                    logger.error("get connection info error;", e);
+                    e.printStackTrace();
+                }
+                // 默认
+                ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.DEFAULT_UPLOAD_SIZE);
+                // 建立连接后15s之内无数据传输则关闭连接
+                socketChannel.read(byteBuffer,
+                        Constants.DEFAULT_KEEP_ALIVE_TIME,
+                        Constants.DEFAULT_KEEP_ALIVE_TIME_UNIT,
+                        byteBuffer,
+                        new ReadHandler(socketChannel, handlers));
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousServerSocketChannel attachment) {
+                logger.error("accept connection error;", exc);
+            }
+        });
     }
 }

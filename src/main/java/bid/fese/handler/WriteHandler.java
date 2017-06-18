@@ -95,6 +95,7 @@ public class WriteHandler {
         @Override
         public void completed(Integer result, Integer nowReadLen) {
             logger.debug("write len:" + result + " all write len:" + (result + nowReadLen) + " data len:" + byteBuffer.limit() + " -" + remoteAddress);
+            // 长度太长， 多次发送
             if (result + nowReadLen < byteBuffer.limit()) {
                 socketChannel.write(byteBuffer, result + nowReadLen, this);
             } else {

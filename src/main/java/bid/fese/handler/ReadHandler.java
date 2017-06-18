@@ -16,7 +16,7 @@ import java.nio.channels.InterruptedByTimeoutException;
 
 /**
  * Created by feng_ on 2016/12/8.
- * 如何处理 当请求为post方法时
+ * 接收请求数据， 并进行简单封装
  */
 public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
     private AsynchronousSocketChannel socketChannel;
@@ -100,7 +100,7 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
             }
         }
 
-
+        // 目前只支持get和post方法
         switch (header.getMethod()) {
             case GET: {
                 //数据读取完毕, 进行下一阶段
@@ -115,6 +115,7 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
             case POST: {
                 int contentLen = Integer.parseInt(header.getHeaderParameter(SeHeader.CONTENT_LENGTH));
                 log.debug("post contentLen:" + contentLen);
+                // 长度超过限制
                 if (contentLen > Constants.MAX_UPLOAD_SIZE) {
                     log.error("the post data is too large, close this connection addredd:" + socketAddress);
                     try {
@@ -146,6 +147,7 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
                     socketChannel.read(buffer, header, new CompletionHandler<Integer, SeHeader>() {
                         @Override
                         public void completed(Integer result, SeHeader seHeader) {
+                            // 这里可能一次性读取不完， 待完善
                             log.debug("read large post data success, readLen:" + result);
                             requestHandlers.addRequest(
                                     new SeRequest(socketChannel, seHeader, buffer.array(), innerKeepAlive));
