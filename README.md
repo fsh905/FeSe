@@ -9,6 +9,7 @@ refer：[nio-httpserver](https://github.com/shenedu/nio-httpserver)
  * Asynchronous
  * Request method (GET, POST)
  * Customize dynamic request handler
+ * Static resource cache
  #### Configure:
  All config properties is in /src/main/resources/server.properties
  <pre>

@@ -18,35 +18,40 @@ public class RequestHandlers {
 
     private static final Logger logger = LogManager.getLogger(RequestHandlers.class);
     // 这里可以采用优先队列
-    private static final List<RequestHandler> handlers = new ArrayList<>(4);
+    private final List<RequestHandler> handlers = new ArrayList<>(4);
     // 静态文件处理
-    private static ThreadLocal<DispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
+    // 这里没有必要使用ThreadLocal, 因为staticDispatcherHandler中不会出现多线程冲突的问题
+//    private static ThreadLocal<DispatcherHandler> staticDispatcherHandlerThreadLocal = new ThreadLocal<>();
     // 每个线程正在处理的请求数, 可用于负载均衡
-    private static ThreadLocal<Integer> requestCount = new ThreadLocal<Integer>() {
-        @Override
-        protected Integer initialValue() {
-            return 0;
-        }
-    };
+    // 暂时没有太好的方法实现
+//    private static ThreadLocal<Integer> requestCount = new ThreadLocal<Integer>() {
+//        @Override
+//        protected Integer initialValue() {
+//            return 0;
+//        }
+//    };
 
-    private static DispatcherHandler dynamicDispatcherHandler;
+    private DispatcherHandler dynamicDispatcherHandler;
+    private DispatcherHandler staticDispatcherHandler;
 
-    private static ThreadLocal<StaticSoftCacheBytes> cacheThreadLocal = new ThreadLocal<>();
-
-    private RequestHandlers() {}
+    // 这里之所以使用ThreadLocal是因为
+    // 1,底层采用map实现
+    // 2多个线程同时对map操作容易出问题
+    private ThreadLocal<StaticSoftCacheBytes> cacheThreadLocal = new ThreadLocal<>();
 
     /**
      * 进行资源初始化
      */
-    public static void initHandlers() {
+    public void initHandlers() {
         // 全局单例的进行初始化
         initDynamicDispatcherHandler();
+        initStaticDispatcherHandler();
     }
 
     /**
      * 初始化动态资源处理器
      */
-    private static void initDynamicDispatcherHandler() {
+    private void initDynamicDispatcherHandler() {
         if (dynamicDispatcherHandler == null) {
             String name = (String) ApplicationContext.get(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER);
             if (name == null) {
@@ -71,11 +76,16 @@ public class RequestHandlers {
         dynamicDispatcherHandler.initHandler();
     }
 
+    private void initStaticDispatcherHandler() {
+        staticDispatcherHandler = new StaticDispatcherHandler();
+    }
+
     /**
      * 这里的随机方式有问题， 可以采用负载均衡，根据当前handler的连接数来判断选取哪一个
+     *
      * @return handler
      */
-    public static RequestHandler getHandler() {
+    public RequestHandler getHandler() {
         int i = (int) (Math.random() * 10) % handlers.size();
         logger.info("dispatcher to handler-" + i);
         return handlers.get(i);
@@ -83,23 +93,20 @@ public class RequestHandlers {
 
     /**
      * 静态资源处理
+     *
      * @return 静态资源处理器， 线程独享
      */
-    public static DispatcherHandler getStaticDispatcherHandler() {
-        DispatcherHandler handler = staticDispatcherHandlerThreadLocal.get();
-        if (handler == null) {
-            handler = new StaticDispatcherHandler();
-            staticDispatcherHandlerThreadLocal.set(handler);
-        }
-        return handler;
+    public DispatcherHandler getStaticDispatcherHandler() {
+        return staticDispatcherHandler;
     }
 
     /**
      * 这里的cache使用threadLocal， 防止冲突
      * todo 需要重新测试缓存机制的使用方式
+     *
      * @return 缓存器
      */
-    public static StaticSoftCacheBytes getCache() {
+    public StaticSoftCacheBytes getCache() {
         StaticSoftCacheBytes cache = cacheThreadLocal.get();
         if (cache == null) {
             cache = new StaticSoftCacheBytes();
@@ -110,35 +117,38 @@ public class RequestHandlers {
 
     /**
      * 线程动态资源分配
+     *
      * @return 动态资源分陪器， 线程独享
      */
-    public static DispatcherHandler getDynamicDispatcherHandler() {
+    public DispatcherHandler getDynamicDispatcherHandler() {
         return dynamicDispatcherHandler;
     }
 
     /**
      * 增加请求处理器
+     *
      * @param handler 请求处理器
      */
-    public static void addRequestHandler(RequestHandler handler) {
+    public void addRequestHandler(RequestHandler handler) {
         handlers.add(handler);
     }
 
     /**
      * 为新请求分配请求处理器
+     *
      * @param request 请求
      */
-    public static void addRequest(SeRequest request) {
+    public void addRequest(SeRequest request) {
         getHandler().addRequest(request);
     }
 
-    public static void addRequestCount() {
-        requestCount.set(requestCount.get() + 1);
-    }
+//    public static void addRequestCount() {
+//        requestCount.set(requestCount.get() + 1);
+//    }
 
-    public static void minusRequestCount() {
-        requestCount.set(requestCount.get() - 1);
-    }
+//    public static void minusRequestCount() {
+//        requestCount.set(requestCount.get() - 1);
+//    }
 
 
 }

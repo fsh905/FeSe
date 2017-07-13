@@ -1,12 +1,9 @@
 package bid.fese.entity;
 
 import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by feng_sh on 6/2/2017.
@@ -14,33 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 采用SoftReference进行连接， 当为软引用时，只有当快要内存溢出时才会进行回收
  */
 public class StaticSoftCacheBytes {
-
-    private Map<String, SoftReference<CacheEntityBytes>> cache = new ConcurrentHashMap<>();
-
-    public class CacheEntityBytes {
-        private byte[] byteBuffer;
-        private ZonedDateTime time;
-        private String fileType;
-        CacheEntityBytes(byte[] byteBuffer, ZonedDateTime time, String fileType) {
-            this.byteBuffer = byteBuffer;
-            this.time = time;
-            this.fileType = fileType;
-        }
-
-        public byte[] getByteBuffer() {
-            return byteBuffer;
-        }
-
-        public ZonedDateTime getTime() {
-            return time;
-        }
-
-        public String getFileType() {
-            return fileType;
-        }
-    }
-
-
+    // 之所以使用HashMap而不是CurrentHashMap
+    // 因为前面使用的是ThreadLocal，没有必要进行线程控制
+    private Map<String, SoftReference<CacheEntityBytes>> cache = new HashMap<>();
 
     public CacheEntityBytes get(String url) {
         SoftReference<CacheEntityBytes> value = cache.get(url);
@@ -56,10 +29,39 @@ public class StaticSoftCacheBytes {
         return null;
     }
 
-    public CacheEntityBytes put(String url, byte[] body, ZonedDateTime time, String fileType) {
-        CacheEntityBytes cacheEntity = new CacheEntityBytes(body, time, fileType);
+    public CacheEntityBytes put(String url, byte[] body, ZonedDateTime time, long lastModifeTime, String fileType) {
+        CacheEntityBytes cacheEntity = new CacheEntityBytes(body, time, lastModifeTime, fileType);
         cache.put(url, new SoftReference<>(cacheEntity));
         return cacheEntity;
+    }
+
+    public class CacheEntityBytes {
+        private byte[] byteBuffer;
+        private ZonedDateTime time;
+        private String fileType;
+        private long lastModifeTime;
+        CacheEntityBytes(byte[] byteBuffer, ZonedDateTime time, long lastModifeTime, String fileType) {
+            this.byteBuffer = byteBuffer;
+            this.time = time;
+            this.lastModifeTime = lastModifeTime;
+            this.fileType = fileType;
+        }
+
+        public byte[] getByteBuffer() {
+            return byteBuffer;
+        }
+
+        public ZonedDateTime getTime() {
+            return time;
+        }
+
+        public String getFileType() {
+            return fileType;
+        }
+
+        public long getLastModifeTime() {
+            return lastModifeTime;
+        }
     }
 
 }

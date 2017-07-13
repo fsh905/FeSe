@@ -11,8 +11,9 @@ public class FileUtil {
 
     /**
      * 将文件转化为byte数组
+     *
      * @param file 文件
-     * @param zip 是否压缩
+     * @param zip  是否压缩
      * @return byte
      * @throws IOException 发生错误
      */

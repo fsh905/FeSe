@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ApplicationContext {
 
-    private static ApplicationContext applicationContext ;
     private static final Map<String, Object> context = new ConcurrentHashMap<>();
+    private static ApplicationContext applicationContext;
 
     private ApplicationContext() {}
 

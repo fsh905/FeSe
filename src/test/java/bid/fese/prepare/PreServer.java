@@ -41,9 +41,10 @@ public class PreServer {
         System.out.println("server start!");
     }
 
-    private class ServerHandler implements Runnable{
+    private class ServerHandler implements Runnable {
         AsynchronousServerSocketChannel serverSocketChannel;
         CountDownLatch latch;
+
         public ServerHandler(AsynchronousServerSocketChannel serverSocketChannel) {
             this.serverSocketChannel = serverSocketChannel;
         }
@@ -52,7 +53,7 @@ public class PreServer {
         public void run() {
             //防止因空等待退出   相当于加了个while
             latch = new CountDownLatch(1);
-            serverSocketChannel.accept(this,new AccpetServerHandler());
+            serverSocketChannel.accept(this, new AccpetServerHandler());
             try {
                 latch.await();
             } catch (InterruptedException e) {
@@ -66,15 +67,15 @@ public class PreServer {
     /**
      * 专门用来处理新客户端连接
      */
-    private class AccpetServerHandler implements CompletionHandler<AsynchronousSocketChannel,ServerHandler>{
+    private class AccpetServerHandler implements CompletionHandler<AsynchronousSocketChannel, ServerHandler> {
 
         @Override
         public void completed(AsynchronousSocketChannel channel, ServerHandler attachment) {
             System.out.println("new client!");
             //等待其他客户端请求 先进先出?
-            attachment.serverSocketChannel.accept(attachment,this);
+            attachment.serverSocketChannel.accept(attachment, this);
             ByteBuffer byteBuffer = ByteBuffer.allocate(1024);// dst   attachment(附件)   handler
-            channel.read(byteBuffer,byteBuffer,new ReadCompletionHandler(channel));
+            channel.read(byteBuffer, byteBuffer, new ReadCompletionHandler(channel));
 
         }
 
@@ -86,7 +87,7 @@ public class PreServer {
         }
     }
 
-    private class ReadCompletionHandler implements CompletionHandler<Integer,ByteBuffer>{
+    private class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
         //用于读取半包 和 返回消息
         AsynchronousSocketChannel channel;
 
@@ -97,7 +98,7 @@ public class PreServer {
         @Override
         public void completed(Integer result, ByteBuffer attachment) {
             //继续监听
-            channel.read(attachment,attachment,this);
+            channel.read(attachment, attachment, this);
 
             attachment.flip();
             //清除空闲
@@ -111,7 +112,7 @@ public class PreServer {
             System.out.println("---end---");
             SocketOption<Boolean> socketOption = StandardSocketOptions.SO_KEEPALIVE;
             try {
-                channel.setOption(socketOption,true);
+                channel.setOption(socketOption, true);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -119,49 +120,53 @@ public class PreServer {
             new WriteCompletionHandler(channel).doWrite("<h1>hello world</h1>");
 
         }
+
         @Override
         public void failed(Throwable exc, ByteBuffer attachment) {
             exc.printStackTrace();
         }
     }
-    private class ReuqestHandler{
+
+    private class ReuqestHandler {
         private String body;
         private AsynchronousSocketChannel channel;
-        public ReuqestHandler(String body,AsynchronousSocketChannel channel) {
+
+        public ReuqestHandler(String body, AsynchronousSocketChannel channel) {
             this.body = body;
             this.channel = channel;
         }
 
-        public void invoke(){
+        public void invoke() {
 
         }
 
     }
 
-    private class WriteCompletionHandler{
+    private class WriteCompletionHandler {
         private AsynchronousSocketChannel channel;
 
         public WriteCompletionHandler(AsynchronousSocketChannel channel) {
             this.channel = channel;
         }
-        public void doWrite(String msg){
+
+        public void doWrite(String msg) {
             String response = "HTTP/1.1 200 OK\n" +
                     "Server: FeSe/1.1\n" +
                     "Cache-Control: no-cache, no-store\n" +
                     "Content-Type: text/html;charset=UTF-8\n" +
-                    "Content-Length: "+msg.getBytes().length+"\n\n"; //must has two \n
-            response += msg ;
+                    "Content-Length: " + msg.getBytes().length + "\n\n"; //must has two \n
+            response += msg;
             System.out.println(response);
             byte[] bytes = response.getBytes();
             ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
             byteBuffer.put(bytes);
             byteBuffer.flip();
-            channel.write(byteBuffer, byteBuffer,new CompletionHandler<Integer,ByteBuffer>() {
+            channel.write(byteBuffer, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
                 @Override
                 public void completed(Integer result, ByteBuffer attachment) {
                     if (attachment.hasRemaining())
 //                        防止一次性不能传送完毕
-                        channel.write(attachment,attachment,this);
+                        channel.write(attachment, attachment, this);
                 }
 
                 @Override
