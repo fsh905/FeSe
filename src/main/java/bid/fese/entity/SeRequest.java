@@ -31,7 +31,6 @@ public class SeRequest {
 
     private SeHeader header;
     private SeCookies cookies;
-    private byte[] in;
     private InStream inputStream;
     private AsynchronousSocketChannel socketChannel;
     private boolean isKeepAlive;
@@ -39,7 +38,6 @@ public class SeRequest {
 
     public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, byte[] in, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
-        this.in = in;
         this.header = header;
         this.cookies = header.getCookies();
         this.isKeepAlive = isKeepAlive;
@@ -48,12 +46,18 @@ public class SeRequest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        parsePostData();
+        // 如果不符合Content-Type: application/x-www-form-urlencoded
+        // 说明需要进行复杂的解析,暂不实现
+        if (!parsePostData(in)) {
+            inputStream = new InStream(in);
+        } else {
+            inputStream = null;
+        }
     }
 
     public SeRequest(AsynchronousSocketChannel socketChannel, SeHeader header, boolean isKeepAlive) {
         this.socketChannel = socketChannel;
-        this.in = null;
+        this.inputStream = null;
         this.header = header;
         this.cookies = header.getCookies();
         this.isKeepAlive = isKeepAlive;
@@ -88,7 +92,7 @@ public class SeRequest {
         return header.getMethod();
     }
 
-    private void parsePostData() {
+    private boolean parsePostData(byte[] in) {
         if (header.getHeaderParameter(SeHeader.CONTENT_TYPE) != null
                 && header.getHeaderParameter(SeHeader.CONTENT_TYPE).equals(SeHeader.X_WWW_FORM_URLENCODED)) {
             // Content-Type: application/x-www-form-urlencoded
@@ -117,7 +121,9 @@ public class SeRequest {
                     index++;
                 }
             }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -152,12 +158,6 @@ public class SeRequest {
     }
 
     public InputStream getInputStream() {
-        if (in == null) {
-            return null;
-        }
-        if (inputStream == null) {
-            inputStream = new InStream();
-        }
         return inputStream;
     }
 
@@ -181,8 +181,8 @@ public class SeRequest {
         private byte[] in;
         private int nextChars;
 
-        InStream() {
-            this.in = SeRequest.this.in;
+        InStream(byte[] in) {
+            this.in = in;
             nextChars = 0;
         }
 

@@ -19,16 +19,14 @@ public class FileUtil {
     public static byte[] file2ByteArray(File file, boolean zip) throws IOException {
         InputStream is = null;
         GZIPOutputStream gzip = null;
-        byte[] buffer = new byte[8912];
         ByteArrayOutputStream baos = new ByteArrayOutputStream(8912);
         try {
             if (zip) {
                 gzip = new GZIPOutputStream(baos);
             }
-
             is = new BufferedInputStream(new FileInputStream(file));
             int read = 0;
-            while ((read = is.read(buffer)) != -1) {
+            for (byte[] buffer = new byte[8912]; (read = is.read(buffer)) != -1; ) {
                 if (zip) {
                     gzip.write(buffer, 0, read);
                 } else {
@@ -45,8 +43,10 @@ public class FileUtil {
                 gzip.close();
             }
         }
-        return baos.toByteArray();
-
+        byte[] res = baos.toByteArray();
+        baos.flush();
+        baos.close();
+        return res;
     }
 
 }
