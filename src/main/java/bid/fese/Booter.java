@@ -29,23 +29,23 @@ public class Booter {
     public static void boot() {
         Booter booter = new Booter();
         ApplicationContext.put(Constants.CONFIG_SERVER_PORT, 8080);
-        booter.init();
-        FeServer server = new FeServer((int) ApplicationContext.get(Constants.CONFIG_SERVER_PORT));
+        RequestHandlers requestHandlers = new RequestHandlers();
+        booter.config();
+        // 初始化一些配置
+        requestHandlers.initHandlers();
+        FeServer server = new FeServer((int) ApplicationContext.get(Constants.CONFIG_SERVER_PORT), requestHandlers);
         int cpu = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < cpu; i++) {
-            RequestHandler handler = new RequestHandler();
-            RequestHandlers.addRequestHandler(handler);
+            RequestHandler handler = new RequestHandler(requestHandlers);
+            requestHandlers.addRequestHandler(handler);
             new Thread(handler, "handler-" + i).start();
         }
         new Thread(server, "server").start();
     }
 
-    private void init() {
-        config();
-        // 初始化一些配置
-        RequestHandlers.initHandlers();
-    }
-
+    /**
+     * 解析配置文件
+     */
     private void config() {
         String classPath = ApplicationContext.getClassPath();
         Map<String, String> props = null;

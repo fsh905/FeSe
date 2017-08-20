@@ -43,7 +43,6 @@ public class RequestHandlers {
      * 进行资源初始化
      */
     public void initHandlers() {
-        // 全局单例的进行初始化
         initDynamicDispatcherHandler();
         initStaticDispatcherHandler();
     }
@@ -82,7 +81,6 @@ public class RequestHandlers {
 
     /**
      * 这里的随机方式有问题， 可以采用负载均衡，根据当前handler的连接数来判断选取哪一个
-     *
      * @return handler
      */
     public RequestHandler getHandler() {
@@ -141,14 +139,5 @@ public class RequestHandlers {
     public void addRequest(SeRequest request) {
         getHandler().addRequest(request);
     }
-
-//    public static void addRequestCount() {
-//        requestCount.set(requestCount.get() + 1);
-//    }
-
-//    public static void minusRequestCount() {
-//        requestCount.set(requestCount.get() - 1);
-//    }
-
 
 }
