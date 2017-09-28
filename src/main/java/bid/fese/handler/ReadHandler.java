@@ -125,7 +125,7 @@ public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
                     }
                     return;
                 }
-                if (contentLen + headEndLen + 4 <= Constants.DEFAULT_UPLOAD_SIZE) {
+                if (contentLen + headEndLen + 4 == bytes.length && contentLen + headEndLen + 4 <= Constants.DEFAULT_UPLOAD_SIZE) {
 
                     // 传输的数据较短
                     byte[] in = new byte[contentLen];
