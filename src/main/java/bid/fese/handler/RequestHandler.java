@@ -7,8 +7,7 @@ import bid.fese.entity.SeResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 
 /**
  * Created by feng_sh on 5/23/2017.
@@ -23,7 +22,8 @@ public class RequestHandler implements Runnable {
     // 每个线程一个请求队列, 但是插入和删除是属于不同的线程
     // 采用ArrayList， 指定初始大小为10
     // 可通过制定不同的大小来应对不同的环境
-    private List<SeRequest> requests = new ArrayList<>(10);
+//    private List<SeRequest> requests = new ArrayList<>(10);
+    private final LinkedList<SeRequest> requests = new LinkedList<>();
 
     public RequestHandler(RequestHandlers requestHandlers) {
         this.requestHandlers = requestHandlers;
@@ -49,10 +49,10 @@ public class RequestHandler implements Runnable {
 
     public void addRequest(SeRequest request) {
         synchronized (requests) {
-            requests.add(request);
-            requests.notifyAll();
+            requests.addLast(request);
+            requests.notify();
         }
-        logger.debug("syn end");
+        logger.debug("add end " + requests.size());
     }
 
     @Override
@@ -64,10 +64,11 @@ public class RequestHandler implements Runnable {
                     try {
                         requests.wait();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        logger.error("wait for request thread has been interrupted", e);
+                        continue;
                     }
                 }
-                request = requests.remove(0);
+                request = requests.removeFirst();
             }
             SeResponse response = new SeResponse(request, requestHandlers);
             dispatcherRequest(request, response);
