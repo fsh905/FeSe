@@ -4,8 +4,8 @@ import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
 import bid.fese.handler.RequestHandler;
 import bid.fese.handler.RequestHandlers;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,7 +20,9 @@ import java.util.Map;
  */
 public class Booter {
 
-    private static final Logger logger = LogManager.getLogger(Booter.class);
+    private static final Logger logger = LoggerFactory.getLogger(Booter.class);
+    private static ApplicationContext context = ApplicationContext.getInstance();
+    private final static int DEFAULT_PORT = 8088;
 
     public static void main(String[] args) {
         boot();
@@ -28,12 +30,13 @@ public class Booter {
 
     public static void boot() {
         Booter booter = new Booter();
-        ApplicationContext.put(Constants.CONFIG_SERVER_PORT, 8080);
         RequestHandlers requestHandlers = new RequestHandlers();
-        booter.config();
+
         // 初始化一些配置
         requestHandlers.initHandlers();
-        FeServer server = new FeServer((int) ApplicationContext.get(Constants.CONFIG_SERVER_PORT), requestHandlers);
+        FeServer server = new FeServer(
+                Integer.parseInt(context.getString(Constants.SERVER_PORT, String.valueOf(DEFAULT_PORT))),
+                requestHandlers);
         int cpu = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < cpu; i++) {
             RequestHandler handler = new RequestHandler(requestHandlers);
@@ -41,51 +44,6 @@ public class Booter {
             new Thread(handler, "handler-" + i).start();
         }
         new Thread(server, "server").start();
-    }
-
-    /**
-     * 解析配置文件
-     */
-    private void config() {
-        String classPath = ApplicationContext.getClassPath();
-        Map<String, String> props = null;
-        try {
-            props = getProp(classPath + Constants.CONFIGURE_PATH);
-        } catch (IOException e) {
-            logger.error("load properties error", e);
-        }
-        if (props != null) {
-            for(String k : props.keySet()) {
-                switch (k) {
-                    case Constants.CONFIG_SERVER_PORT :
-                        ApplicationContext.put(Constants.CONFIG_SERVER_PORT, Integer.parseInt(props.get(k)));
-                        break;
-                    case Constants.CONFIG_REQUEST_POSTFIX :
-                        ApplicationContext.put(Constants.CONFIG_REQUEST_POSTFIX, props.get(k).toLowerCase().toCharArray());
-                        break;
-                    default:
-                        ApplicationContext.put(k, props.get(k));
-                }
-            }
-        }
-    }
-
-    private Map<String, String> getProp(String configFilePath) throws IOException {
-        Map<String, String> props = new HashMap<>();
-        File propFile = new File(configFilePath);
-        logger.info(propFile.getAbsolutePath());
-        BufferedReader reader = new BufferedReader(new FileReader(propFile));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            if (line.length() < 3 || line.trim().charAt(0) == '#') {
-                continue;
-            }
-            String[] kv = line.trim().split("=");
-            logger.debug("server configure: ["+ kv[0] + "]\t[" + kv[1] + "]");
-            props.put(kv[0], kv[1]);
-        }
-        reader.close();
-        return props;
     }
 
 }

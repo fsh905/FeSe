@@ -4,8 +4,8 @@ import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
 import bid.fese.entity.SeRequest;
 import bid.fese.entity.StaticSoftCacheBytes;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class RequestHandlers {
 
-    private static final Logger logger = LogManager.getLogger(RequestHandlers.class);
+    private static final Logger logger = LoggerFactory.getLogger(RequestHandlers.class);
     // 这里可以采用优先队列
     private final List<RequestHandler> handlers = new ArrayList<>(4);
     // 静态文件处理
@@ -52,7 +52,7 @@ public class RequestHandlers {
      */
     private void initDynamicDispatcherHandler() {
         if (dynamicDispatcherHandler == null) {
-            String name = (String) ApplicationContext.get(Constants.CONFIG_DYNAMIC_REQUEST_HANDLER);
+            String name = ApplicationContext.getInstance().getString(Constants.DYNAMIC_REQUEST_HANDLER);
             if (name == null) {
                 dynamicDispatcherHandler = new DynamicDispatcherHandler();
             } else {

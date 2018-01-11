@@ -2,8 +2,8 @@ package bid.fese.handler;
 
 import bid.fese.common.Constants;
 import bid.fese.entity.SeResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ import java.nio.channels.CompletionHandler;
  */
 public class WriteHandler {
 
-    private static final Logger logger = LogManager.getLogger(WriteHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(WriteHandler.class);
 
     private AsynchronousSocketChannel socketChannel;
     private SeResponse response;

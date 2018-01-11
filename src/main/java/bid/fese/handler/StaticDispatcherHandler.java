@@ -23,10 +23,11 @@ public class StaticDispatcherHandler implements DispatcherHandler {
         }
 
         if (url.length() == 0 || url.length() == 1) {
-            response.writeFile(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH) + "/" + ApplicationContext.get(Constants.CONFIG_INDEX));
+            response.writeFile(ApplicationContext.getInstance().getString(Constants.STATIC_RESOURCE_PATH)
+                    + "/" + ApplicationContext.getInstance().getString(Constants.PAGE_INDEX));
             response.flush();
         } else {
-            response.writeFile(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH) + url);
+            response.writeFile(ApplicationContext.getInstance().getString(Constants.STATIC_RESOURCE_PATH) + url);
             response.flush();
         }
     }

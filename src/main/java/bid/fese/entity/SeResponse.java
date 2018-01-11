@@ -5,8 +5,8 @@ import bid.fese.common.Constants;
 import bid.fese.common.FileUtil;
 import bid.fese.handler.RequestHandlers;
 import bid.fese.handler.WriteHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +25,8 @@ import java.time.format.DateTimeFormatter;
  */
 public class SeResponse {
 
-    private static final Logger logger = LogManager.getLogger(SeResponse.class);
-
+    private static final Logger logger = LoggerFactory.getLogger(SeResponse.class);
+    private final ApplicationContext context = ApplicationContext.getInstance();
     private SeCookies cookies;
     private AsynchronousSocketChannel socketChannel;
     private SeHeader header;
@@ -142,13 +142,13 @@ public class SeResponse {
     }
 
     private void _404_notFoundPage() {
-        writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
-                + ApplicationContext.get(Constants.CONFIG_PAGE_404).toString()), false);
+        writeFile(new File(context.getString(Constants.STATIC_RESOURCE_PATH)
+                + context.getString(Constants.PAGE_404)), false);
     }
 
     private void _500_Server_Error_Page() {
-        writeFile(new File(ApplicationContext.get(Constants.CONFIG_STATIC_RESOURCE_PATH).toString()
-                + ApplicationContext.get(Constants.CONFIG_PAGE_500).toString()), false);
+        writeFile(new File(context.getString(Constants.STATIC_RESOURCE_PATH)
+                + context.getString(Constants.PAGE_500)), false);
     }
 
     private void _404_notFound() {

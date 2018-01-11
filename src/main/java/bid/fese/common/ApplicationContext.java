@@ -1,8 +1,13 @@
 package bid.fese.common;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Properties;
 
 /**
  * Created by feng_sh on 5/23/2017.
@@ -10,38 +15,67 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ApplicationContext {
 
-    private static final Map<String, Object> context = new ConcurrentHashMap<>();
-    private static ApplicationContext applicationContext;
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationContext.class);
+    private static final Properties properties = new Properties();
 
-    private ApplicationContext() {}
-
-    public static ApplicationContext getApplicationContext() {
-        if (applicationContext == null) {
-            applicationContext = new ApplicationContext();
+    static {
+        String configPath = System.getProperty(Constants.CONFIGURE_PATH, getClasspath() + "server.properties");
+        properties.put(Constants.CONFIGURE_PATH, configPath);
+        logger.debug("config path: " + configPath);
+        try {
+            InputStream in = new FileInputStream(configPath);
+            properties.load(in);
+        } catch (IOException e) {
+            logger.error("load properties file error", e);
         }
-        return applicationContext;
+        for (Object key : properties.keySet()) {
+            Object value = properties.get(key);
+            logger.info(String.format("[config.properties]-> %s : %s", key, value));
+        }
     }
 
-    public static String getClassPath() {
-        String path = (String) get(Constants.CLASS_PATH);
-        if (path == null) {
+    private ApplicationContext() {
+    }
+
+    public static String getClasspath() {
+        String classPath = properties.getProperty(Constants.CLASS_PATH);
+        if (classPath == null) {
             URL url = ClassLoader.class.getResource("/");
             if (url != null) {
-                path = ClassLoader.class.getResource("/").getPath();
-            } else {
-                path = "";
+                classPath = url.getPath();
+                properties.put(Constants.CLASS_PATH, classPath);
             }
-            put(Constants.CLASS_PATH, path);
+            return classPath;
         }
-        return path;
+        return classPath;
     }
 
-    public static Object get(String serviceName) {
-        return context.get(serviceName);
+    public static ApplicationContext getInstance() {
+        return Inner.application;
     }
 
-    public static void put(String serviceName, Object service) {
-        context.put(serviceName, service);
+    public String getString(String key, String defaultValue) {
+        return properties.getProperty(key, defaultValue);
+    }
+
+    public String getString(String key) {
+        return properties.getProperty(key);
+    }
+
+    public Object getObject(String key) {
+        return properties.get(key);
+    }
+
+    public Object getObject(String key, String defaultObject) {
+        return properties.getOrDefault(key, defaultObject);
+    }
+
+    public void set(String key, String value) {
+        properties.setProperty(key, value);
+    }
+
+    private static class Inner {
+        private final static ApplicationContext application = new ApplicationContext();
     }
 
 }

@@ -4,8 +4,8 @@ import bid.fese.common.Constants;
 import bid.fese.entity.SeHeader;
 import bid.fese.entity.SeRequest;
 import bid.fese.exception.UnsupportedRequestMethodException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -20,7 +20,7 @@ import java.nio.channels.InterruptedByTimeoutException;
  */
 public class ReadHandler implements CompletionHandler<Integer, ByteBuffer> {
     private AsynchronousSocketChannel socketChannel;
-    private static final Logger log = LogManager.getLogger(ReadHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(ReadHandler.class);
     private String socketAddress;
     private RequestHandlers requestHandlers;
 

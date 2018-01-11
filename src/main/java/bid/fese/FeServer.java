@@ -2,10 +2,9 @@ package bid.fese;
 
 import bid.fese.common.Constants;
 import bid.fese.handler.ReadHandler;
-import bid.fese.handler.RequestHandler;
 import bid.fese.handler.RequestHandlers;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -20,7 +19,7 @@ import java.nio.channels.CompletionHandler;
  */
 public class FeServer implements Runnable {
 
-    private final Logger logger = LogManager.getLogger(FeServer.class);
+    private final Logger logger = LoggerFactory.getLogger(FeServer.class);
     private final int port;
     private final RequestHandlers handlers;
 

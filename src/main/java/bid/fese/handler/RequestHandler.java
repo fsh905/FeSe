@@ -4,8 +4,8 @@ import bid.fese.common.ApplicationContext;
 import bid.fese.common.Constants;
 import bid.fese.entity.SeRequest;
 import bid.fese.entity.SeResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 
@@ -16,8 +16,10 @@ import java.util.LinkedList;
 public class RequestHandler implements Runnable {
 
 
-    private final static Logger logger = LogManager.getLogger(RequestHandler.class);
-    private static char[] postfix = (char[]) ApplicationContext.get(Constants.CONFIG_REQUEST_POSTFIX);
+    private final static Logger logger = LoggerFactory.getLogger(RequestHandler.class);
+    private static final ApplicationContext context = ApplicationContext.getInstance();
+    
+    private static char[] postfix = context.getString(Constants.REQUEST_POSTFIX).toCharArray();
     private final RequestHandlers requestHandlers;
     // 每个线程一个请求队列, 但是插入和删除是属于不同的线程
     // 采用ArrayList， 指定初始大小为10
@@ -58,6 +60,7 @@ public class RequestHandler implements Runnable {
     @Override
     public void run() {
         SeRequest request = null;
+        outter:
         while (true) {
             synchronized (requests) {
                 while (requests.isEmpty()) {
@@ -65,7 +68,7 @@ public class RequestHandler implements Runnable {
                         requests.wait();
                     } catch (InterruptedException e) {
                         logger.error("wait for request thread has been interrupted", e);
-                        continue;
+                        continue outter;
                     }
                 }
                 request = requests.removeFirst();
