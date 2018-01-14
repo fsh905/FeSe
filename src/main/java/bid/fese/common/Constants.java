@@ -44,4 +44,10 @@ public class Constants {
     public static final String PAGE_404 = "page.404";
     public static final String PAGE_500 = "page.500";
 
+    // 默认buffer大小
+    public static final int DEFAULT_BUFFER_SIZE = 32 * 8 * 1024; // 64KB
+
+    // 默认buffer池大小 (pow(2, n) - 1)
+    public static final int DEFAULT_POOL_COUNT = 8;
+
 }
